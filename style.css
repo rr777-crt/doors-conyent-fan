@@ -6,14 +6,14 @@
 }
 
 body {
-    background: #ffffff;
-    color: #333333;
+    background: #0a0a0a;
+    color: #ffffff;
     min-height: 100vh;
     overflow-x: hidden;
 }
 
 .container {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
 }
@@ -21,45 +21,38 @@ body {
 /* Главное меню */
 #main-menu {
     text-align: center;
-    padding: 100px 20px;
+    padding: 150px 20px;
 }
 
 .game-title {
-    font-size: 3rem;
-    color: #2c3e50;
-    margin-bottom: 40px;
+    font-size: 4rem;
+    color: #e74c3c;
+    margin-bottom: 60px;
     font-weight: bold;
+    text-shadow: 0 0 20px rgba(231, 76, 60, 0.5);
 }
 
-/* Простые кнопки */
+/* Кнопки */
 .btn {
-    padding: 12px 30px;
-    font-size: 1rem;
-    border: 2px solid #3498db;
-    border-radius: 8px;
+    padding: 15px 40px;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: 5px;
     cursor: pointer;
     transition: all 0.2s ease;
-    margin: 8px;
     font-weight: bold;
-    background: #3498db;
+    background: #e74c3c;
     color: white;
 }
 
 .btn:hover {
-    background: #2980b9;
-    border-color: #2980b9;
+    background: #c0392b;
+    transform: scale(1.05);
 }
 
 /* Игровой экран */
 #game-screen {
     display: none;
-}
-
-.section-title {
-    text-align: center;
-    margin-bottom: 30px;
-    color: #2c3e50;
-    font-size: 2rem;
 }
 
 .room-header {
@@ -68,24 +61,21 @@ body {
 }
 
 .room-title {
-    font-size: 2rem;
-    color: #2c3e50;
+    font-size: 2.5rem;
+    color: #e74c3c;
     margin-bottom: 10px;
 }
 
 /* Комнаты и двери */
 .room-content {
-    background: #f8f9fa;
     padding: 40px;
-    border-radius: 15px;
     margin-bottom: 20px;
-    min-height: 500px;
+    min-height: 600px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 30px;
-    border: 1px solid #dee2e6;
 }
 
 /* Ключ */
@@ -93,12 +83,13 @@ body {
     background: #f39c12;
     color: white;
     padding: 15px 30px;
-    border-radius: 8px;
+    border-radius: 5px;
     cursor: pointer;
     transition: all 0.2s ease;
     font-weight: bold;
     border: none;
     font-size: 1.1rem;
+    position: absolute;
 }
 
 .key:hover {
@@ -114,24 +105,24 @@ body {
 /* Двери */
 .door {
     background: #8B4513;
-    height: 200px;
-    width: 140px;
-    border-radius: 8px;
+    height: 220px;
+    width: 120px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
-    border: 3px solid #5D4037;
+    border: 2px solid #5D4037;
     font-weight: bold;
-    font-size: 1.1rem;
+    font-size: 1rem;
     color: white;
+    margin: 10px;
 }
 
 .door:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 20px rgba(139, 69, 19, 0.3);
+    box-shadow: 0 10px 25px rgba(139, 69, 19, 0.5);
 }
 
 .door::before {
@@ -141,24 +132,28 @@ body {
     left: 10px;
     right: 10px;
     bottom: 10px;
-    border: 2px solid #5D4037;
-    border-radius: 4px;
+    border: 1px solid #5D4037;
 }
 
 .door-knob {
     position: absolute;
-    right: 20px;
+    right: 15px;
     top: 50%;
     transform: translateY(-50%);
-    width: 18px;
-    height: 18px;
+    width: 12px;
+    height: 12px;
     background: #FFD700;
     border-radius: 50%;
 }
 
+.wrong-door {
+    background: #7a4f32;
+    border-color: #4e342e;
+}
+
 /* Особые стили для комнат */
 .long-room {
-    min-height: 500px;
+    min-height: 1200px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -168,43 +163,8 @@ body {
 .two-doors {
     display: flex;
     justify-content: center;
-    gap: 40px;
+    gap: 50px;
     flex-wrap: wrap;
-}
-
-.wrong-door {
-    background: #7a4f32;
-    border-color: #4e342e;
-}
-
-.hidden-object {
-    opacity: 0.3;
-    transition: opacity 0.3s ease;
-}
-
-.hidden-object:hover {
-    opacity: 1;
-}
-
-.stone {
-    background: #795548;
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none;
-    color: white;
-    font-weight: bold;
-    font-size: 1rem;
-}
-
-.stone:active {
-    transform: scale(0.95);
-    background: #6d4c41;
 }
 
 .many-doors {
@@ -216,35 +176,48 @@ body {
 }
 
 .many-doors .door {
-    height: 120px;
+    height: 150px;
     font-size: 0.9rem;
 }
 
-.toilet {
-    background: #ffffff;
+.stone {
+    background: #795548;
     width: 80px;
-    height: 100px;
-    border-radius: 8px 8px 0 0;
+    height: 80px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    color: white;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.stone:active {
+    transform: scale(0.95);
+    background: #6d4c41;
+}
+
+.toilet {
+    background: #2c3e50;
+    width: 60px;
+    height: 80px;
     position: relative;
-    border: 2px solid #bdbdbd;
 }
 
 .toilet::before {
     content: '';
     position: absolute;
-    top: 25px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
-    width: 50px;
-    height: 50px;
-    background: #e0e0e0;
+    width: 40px;
+    height: 40px;
+    background: #34495e;
     border-radius: 50%;
-}
-
-.small-door {
-    width: 80px;
-    height: 140px;
-    font-size: 0.9rem;
 }
 
 /* Комнатная структура */
@@ -260,9 +233,142 @@ body {
 
 .room-text {
     text-align: center;
-    color: #7f8c8d;
+    color: #bdc3c7;
+    font-size: 1.3rem;
+    margin: 20px 0;
+}
+
+/* Монстры */
+.monster-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.monster-container {
+    background: #2c3e50;
+    padding: 40px;
+    text-align: center;
+    border-radius: 10px;
+    border: 2px solid #e74c3c;
+}
+
+.monster-container h3 {
+    color: #e74c3c;
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+.defend-button {
+    background: #e74c3c;
+    color: white;
+    padding: 20px 40px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
     font-size: 1.2rem;
+    margin: 20px auto;
+    transition: all 0.2s ease;
+}
+
+.defend-button:hover {
+    background: #c0392b;
+    transform: scale(1.05);
+}
+
+.defend-button.green {
+    background: #27ae60;
+}
+
+.defend-button.green:hover {
+    background: #219653;
+}
+
+.timer {
+    font-size: 1.5rem;
+    color: #f39c12;
     margin: 15px 0;
+    font-weight: bold;
+}
+
+/* Прогресс бар для совершителя глаз */
+.progress-bar {
+    width: 300px;
+    height: 30px;
+    background: #34495e;
+    border-radius: 5px;
+    margin: 20px auto;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #3498db;
+    width: 50%;
+    transition: width 0.3s;
+}
+
+.requirement {
+    font-size: 1.5rem;
+    margin: 20px 0;
+    padding: 15px;
+    background: #34495e;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+/* ЯРКИЙ */
+.bright-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.bright-container {
+    text-align: center;
+    color: #000;
+}
+
+.bright-container h3 {
+    font-size: 3rem;
+    margin-bottom: 20px;
+}
+
+.bright-counter {
+    font-size: 2rem;
+    margin: 20px 0;
+    font-weight: bold;
+}
+
+.bright-button {
+    background: #3498db;
+    color: white;
+    padding: 20px 40px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin: 20px auto;
+    transition: all 0.2s ease;
+}
+
+.bright-button:hover {
+    background: #2980b9;
+    transform: scale(1.05);
 }
 
 /* Временной монстр */
@@ -280,55 +386,11 @@ body {
 }
 
 .temporal-text {
-    font-size: 3rem;
+    font-size: 4rem;
     color: white;
     text-align: center;
     font-weight: bold;
-}
-
-/* Индекс */
-#index-screen {
-    display: none;
-}
-
-.index-container {
-    background: #f8f9fa;
-    padding: 30px;
-    border-radius: 15px;
-    max-height: 60vh;
-    overflow-y: auto;
-    border: 1px solid #dee2e6;
-}
-
-.index-item {
-    background: white;
-    margin: 15px 0;
-    padding: 20px;
-    border-radius: 8px;
-    border-left: 4px solid #3498db;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.index-item h3 {
-    color: #2c3e50;
-    margin-bottom: 10px;
-    font-size: 1.2rem;
-}
-
-.index-item p {
-    color: #7f8c8d;
-    font-size: 1rem;
-    line-height: 1.4;
-}
-
-.index-item.unlocked {
-    border-left-color: #27ae60;
-}
-
-.index-item.unlocked h3::before {
-    content: '✓ ';
-    color: #27ae60;
-    font-weight: bold;
+    text-shadow: 0 0 20px rgba(0,0,0,0.8);
 }
 
 /* Сообщения */
@@ -338,11 +400,10 @@ body {
     left: 50%;
     transform: translateX(-50%);
     padding: 15px 30px;
-    border-radius: 8px;
+    border-radius: 5px;
     font-weight: bold;
     z-index: 1100;
     animation: slideDown 0.3s ease;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
 }
 
 @keyframes slideDown {
@@ -372,8 +433,8 @@ body {
     }
     
     .door {
-        height: 160px;
-        width: 120px;
+        height: 180px;
+        width: 100px;
     }
     
     .many-doors {
@@ -386,7 +447,11 @@ body {
     }
     
     .room-content {
-        padding: 30px;
-        min-height: 450px;
+        padding: 20px;
+        min-height: 500px;
+    }
+    
+    .long-room {
+        min-height: 800px;
     }
 }
