@@ -43,6 +43,7 @@ body {
     font-weight: bold;
     background: #e74c3c;
     color: white;
+    margin: 10px;
 }
 
 .btn:hover {
@@ -64,6 +65,56 @@ body {
     font-size: 2.5rem;
     color: #e74c3c;
     margin-bottom: 10px;
+}
+
+/* Индекс */
+#index-screen {
+    display: none;
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #e74c3c;
+    font-size: 2.5rem;
+}
+
+.index-container {
+    background: #1a1a1a;
+    padding: 30px;
+    border-radius: 10px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.index-item {
+    background: #2c3e50;
+    margin: 15px 0;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+}
+
+.index-item h3 {
+    color: #3498db;
+    margin-bottom: 10px;
+    font-size: 1.3rem;
+}
+
+.index-item p {
+    color: #bdc3c7;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.index-item.unlocked {
+    border-left-color: #27ae60;
+}
+
+.index-item.unlocked h3::before {
+    content: '✓ ';
+    color: #27ae60;
+    font-weight: bold;
 }
 
 /* Комнаты и двери */
@@ -245,7 +296,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.95);
     display: none;
     align-items: center;
     justify-content: center;
@@ -258,6 +309,7 @@ body {
     text-align: center;
     border-radius: 10px;
     border: 2px solid #e74c3c;
+    min-width: 400px;
 }
 
 .monster-container h3 {
@@ -267,7 +319,6 @@ body {
 }
 
 .defend-button {
-    background: #e74c3c;
     color: white;
     padding: 20px 40px;
     border-radius: 5px;
@@ -276,19 +327,22 @@ body {
     font-size: 1.2rem;
     margin: 20px auto;
     transition: all 0.2s ease;
+    border: none;
+    min-width: 200px;
 }
 
-.defend-button:hover {
+.defend-button.red {
+    background: #e74c3c;
+}
+
+.defend-button.red:hover {
     background: #c0392b;
     transform: scale(1.05);
 }
 
 .defend-button.green {
     background: #27ae60;
-}
-
-.defend-button.green:hover {
-    background: #219653;
+    cursor: not-allowed;
 }
 
 .timer {
@@ -322,6 +376,12 @@ body {
     background: #34495e;
     border-radius: 5px;
     font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.requirement:hover {
+    background: #2c3e50;
 }
 
 /* ЯРКИЙ */
@@ -331,44 +391,43 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: white;
+    background: rgba(255, 255, 255, 0.1);
     display: none;
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    flex-direction: column;
 }
 
-.bright-container {
-    text-align: center;
-    color: #000;
+.bright-ball {
+    width: 200px;
+    height: 200px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    animation: brightPulse 1s infinite;
+    box-shadow: 0 0 50px rgba(255, 255, 255, 0.8);
+    transition: all 0.2s ease;
 }
 
-.bright-container h3 {
-    font-size: 3rem;
-    margin-bottom: 20px;
+.bright-ball:active {
+    transform: scale(0.9);
+}
+
+@keyframes brightPulse {
+    0% { transform: scale(1); box-shadow: 0 0 50px rgba(255, 255, 255, 0.8); }
+    50% { transform: scale(1.1); box-shadow: 0 0 70px rgba(255, 255, 255, 1); }
+    100% { transform: scale(1); box-shadow: 0 0 50px rgba(255, 255, 255, 0.8); }
 }
 
 .bright-counter {
     font-size: 2rem;
+    color: #000;
     margin: 20px 0;
     font-weight: bold;
-}
-
-.bright-button {
-    background: #3498db;
-    color: white;
-    padding: 20px 40px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px 20px;
     border-radius: 5px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 1.2rem;
-    margin: 20px auto;
-    transition: all 0.2s ease;
-}
-
-.bright-button:hover {
-    background: #2980b9;
-    transform: scale(1.05);
 }
 
 /* Временной монстр */
@@ -453,5 +512,15 @@ body {
     
     .long-room {
         min-height: 800px;
+    }
+    
+    .monster-container {
+        min-width: 300px;
+        padding: 20px;
+    }
+    
+    .bright-ball {
+        width: 150px;
+        height: 150px;
     }
 }
