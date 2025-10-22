@@ -11,7 +11,7 @@
     <div id="main-menu" class="container">
         <h1 class="game-title">СЛУЧАЙНЫЕ КОМНАТЫ</h1>
         <p class="game-subtitle">Исследуйте комнаты, избегайте монстров и выживайте!</p>
-        <button class="btn red-button play-game" data-start-room="1">Начать игру</button>
+        <button class="btn red-button play-game">Начать игру</button>
         <button class="btn blue-button index-see">Индекс монстров</button>
     </div>
 
@@ -21,16 +21,12 @@
             <h2 class="room-title" id="room-title">Комната 1</h2>
             <div class="stats">
                 <div class="stat-card">
-                    <div>Комнаты пройдены</div>
-                    <div class="stat-value" id="rooms-completed">0/100</div>
+                    <div>Ключ</div>
+                    <div class="stat-value" id="key-status">❌</div>
                 </div>
                 <div class="stat-card">
-                    <div>Жизни</div>
-                    <div class="stat-value" id="lives-count">1</div>
-                </div>
-                <div class="stat-card">
-                    <div>Монстры встречены</div>
-                    <div class="stat-value" id="monsters-met">0</div>
+                    <div>Монстры</div>
+                    <div class="stat-value" id="monsters-count">0</div>
                 </div>
             </div>
         </div>
@@ -46,7 +42,7 @@
 
     <!-- Индекс монстров -->
     <div id="index-screen" class="container">
-        <h2 style="text-align: center; margin-bottom: 30px; color: #3498db;">ИНДЕКС МОНСТРОВ</h2>
+        <h2 class="section-title">ИНДЕКС МОНСТРОВ</h2>
         <div class="index-container" id="index-container">
             <!-- Индекс генерируется через JS -->
         </div>
@@ -63,12 +59,9 @@
         </div>
     </div>
 
-    <!-- Монстры -->
-    <div class="monster-overlay" id="monster-overlay">
-        <div class="monster-container" id="monster-container">
-            <!-- Контент монстра генерируется через JS -->
-        </div>
-    </div>
+    <script src="main.js"></script>
+</body>
+</html>
 
     <script src="main.js"></script>
 </body>
