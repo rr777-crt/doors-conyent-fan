@@ -11,6 +11,7 @@
     <div id="main-menu" class="container">
         <h1 class="game-title">DOORS-OFF</h1>
         <button class="btn play-game">ИГРАТЬ</button>
+        <button class="btn index-see">ИНДЕКС</button>
     </div>
 
     <!-- Игровой экран -->
@@ -21,6 +22,17 @@
 
         <div class="room-content" id="room-content">
             <!-- Контент комнаты генерируется через JS -->
+        </div>
+    </div>
+
+    <!-- Индекс -->
+    <div id="index-screen" class="container">
+        <h2 class="section-title">ИНДЕКС МОНСТРОВ</h2>
+        <div class="index-container" id="index-container">
+            <!-- Индекс генерируется через JS -->
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn" id="index-back-btn">НАЗАД</button>
         </div>
     </div>
 
@@ -36,8 +48,8 @@
     <div class="monster-overlay" id="red-creature-overlay">
         <div class="monster-container">
             <h3>КРАСНАЯ ТВАРЬ!</h3>
-            <p>Нажми чтобы отбить!</p>
-            <div class="defend-button" onclick="defeatRedCreature()">ОТБИТЬ</div>
+            <p>Нажми чтобы отбить за 1.5 сек!</p>
+            <div class="defend-button red" onclick="defeatRedCreature()">ОТБИТЬ</div>
             <div class="timer" id="red-timer">1.5</div>
         </div>
     </div>
@@ -46,8 +58,8 @@
     <div class="monster-overlay" id="green-creature-overlay">
         <div class="monster-container">
             <h3>ЗЕЛЕНАЯ ТВАРЬ!</h3>
-            <p>Не нажимай кнопку!</p>
-            <div class="defend-button green" onclick="failGreenCreature()">НЕ НАЖИМАТЬ</div>
+            <p>Не нажимай кнопку 1.5 сек!</p>
+            <div class="defend-button green" id="green-button">НЕ НАЖИМАТЬ</div>
             <div class="timer" id="green-timer">1.5</div>
         </div>
     </div>
@@ -59,19 +71,15 @@
             <div class="progress-bar">
                 <div class="progress-fill" id="eye-progress"></div>
             </div>
-            <div class="requirement" id="eye-requirement">НАЖМИ!</div>
+            <div class="requirement" id="eye-requirement">ПОДГОТОВКА...</div>
             <div class="timer" id="eye-timer">2.0</div>
         </div>
     </div>
 
     <!-- ЯРКИЙ -->
     <div class="bright-overlay" id="bright-overlay">
-        <div class="bright-container">
-            <h3>ЯРКИЙ!</h3>
-            <p>Нажми 20 раз!</p>
-            <div class="bright-counter" id="bright-counter">0/20</div>
-            <div class="bright-button" onclick="clickBright()">НАЖМИ</div>
-        </div>
+        <div class="bright-ball" id="bright-ball" onclick="clickBright()"></div>
+        <div class="bright-counter" id="bright-counter">0/20</div>
     </div>
 
     <script src="main.js"></script>
