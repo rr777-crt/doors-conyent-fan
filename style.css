@@ -37,7 +37,7 @@ body {
     margin-bottom: 40px;
 }
 
-/* Кнопки */
+/* Простые кнопки */
 .btn {
     padding: 12px 30px;
     font-size: 1rem;
@@ -118,7 +118,7 @@ body {
     border: 1px solid #dee2e6;
 }
 
-/* Ключ */
+/* Простая кнопка ключа */
 .key {
     background: #f39c12;
     color: white;
@@ -142,7 +142,7 @@ body {
     cursor: not-allowed;
 }
 
-/* Двери */
+/* Простые двери */
 .door {
     background: #8B4513;
     height: 180px;
