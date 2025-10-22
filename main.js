@@ -9,33 +9,7 @@ const gameState = {
     index: {
         temporal: { 
             name: "Временной", 
-            description: "Появляется при открытии двери с 15% шансом. Убивает через 5 секунд, но вы в безопасности, если откроете другую дверь.", 
-            met: false 
-        },
-        redCreature: { 
-            name: "Красная тварь", 
-            description: "Появляется каждые 10-15 секунд с шансом 10-15%. Требует нажать кнопку в течение 1.5 секунд.", 
-            met: false 
-        },
-        greenCreature: { 
-            name: "Зеленая тварь", 
-            description: "Появляется каждые 10-15 секунд с шансом 10-15%. Нельзя нажимать кнопку в течение 1.5 секунд.", 
-            met: false 
-        },
-        eyePerformer: { 
-            name: "Совершитель глаз", 
-            description: "Появляется при открытии двери с 20% шансом (максимум 2 раза за игру). Требует выполнения меняющихся требований.", 
-            met: false,
-            count: 0
-        },
-        darkness: { 
-            name: "Тьма", 
-            description: "В тёмной комнате не работает фонарик. Появляется при открытии двери с 35% шансом.", 
-            met: false 
-        },
-        bright: { 
-            name: "ЯРКИЙ", 
-            description: "Появляется при открытии двери с 10% шансом. Ослепляет экран на 10 секунд. Нужно нажать 20 раз чтобы победить.", 
+            description: "Появляется при открытии двери с 15% шансом. Убивает через 5 секунд.", 
             met: false 
         }
     }
@@ -72,9 +46,7 @@ const roomDefinitions = {
         title: "Комната 3",
         content: `
             <div class="long-room">
-                <div class="room-section">
-                    <p>Длинный коридор...</p>
-                </div>
+                <div class="room-text">Длинный коридор...</div>
                 <div class="room-section">
                     <div class="door" onclick="openDoor(4)">
                         Дверь
@@ -87,11 +59,9 @@ const roomDefinitions = {
     4: {
         title: "Комната 4",
         content: `
-            <div class="room-section">
-                <p>Выберите правильную дверь</p>
-            </div>
+            <div class="room-text">Выберите правильную дверь</div>
             <div class="two-doors">
-                <div class="door wrong-door" onclick="showMessage('Неправильная дверь!', 'error')">
+                <div class="door wrong-door" onclick="showMessage('Ловушка!', 'error')">
                     Ловушка
                     <div class="door-knob"></div>
                 </div>
@@ -121,9 +91,7 @@ const roomDefinitions = {
     6: {
         title: "Комната 6",
         content: `
-            <div class="room-section">
-                <p>Найдите спрятанный ключ</p>
-            </div>
+            <div class="room-text">Найдите спрятанный ключ</div>
             <div class="room-section">
                 <div class="key hidden-object" onclick="takeKey()" style="opacity: 0.3;">🔑</div>
                 <div class="door" onclick="checkDoor(7)">
@@ -136,9 +104,7 @@ const roomDefinitions = {
     7: {
         title: "Комната 7",
         content: `
-            <div class="room-section">
-                <p>Только одна дверь правильная</p>
-            </div>
+            <div class="room-text">Только одна дверь правильная</div>
             <div class="two-doors">
                 <div class="door wrong-door" onclick="showMessage('Ловушка!', 'error')">
                     Дверь 1
@@ -158,13 +124,9 @@ const roomDefinitions = {
     8: {
         title: "Комната 8",
         content: `
-            <div class="long-room" style="min-height: 700px;">
-                <div class="room-section">
-                    <p>Очень длинный коридор...</p>
-                </div>
-                <div class="room-section">
-                    <p>Идём дальше...</p>
-                </div>
+            <div class="long-room">
+                <div class="room-text">Очень длинный коридор...</div>
+                <div class="room-text">Идём дальше...</div>
                 <div class="room-section">
                     <div class="door" onclick="openDoor(9)">
                         Дверь
@@ -177,9 +139,7 @@ const roomDefinitions = {
     9: {
         title: "Комната 9",
         content: `
-            <div class="room-section">
-                <p>Комната для отдыха</p>
-            </div>
+            <div class="room-text">Комната для отдыха</div>
             <div class="room-section">
                 <div class="door" onclick="openDoor(10)">
                     Дверь
@@ -196,7 +156,7 @@ const roomDefinitions = {
             </div>
             <div class="room-section">
                 <div class="door small-door" onclick="openDoor(11)">
-                    Маленькая дверь
+                    Дверь
                     <div class="door-knob"></div>
                 </div>
             </div>
@@ -205,9 +165,7 @@ const roomDefinitions = {
     11: {
         title: "Комната 11",
         content: `
-            <div class="room-section">
-                <p>Зажмите камень чтобы отодвинуть</p>
-            </div>
+            <div class="room-text">Зажмите камень чтобы отодвинуть</div>
             <div class="room-section">
                 <div class="stone" onmousedown="moveStone(this)" ontouchstart="moveStone(this)">
                     Камень
@@ -224,13 +182,11 @@ const roomDefinitions = {
     12: {
         title: "Комната 12",
         content: `
-            <div class="room-section">
-                <p>Найдите 2 правильные двери из 10</p>
-            </div>
+            <div class="room-text">Найдите 2 правильные двери из 10</div>
             <div class="many-doors">
                 ${Array.from({length: 10}, (_, i) => `
                     <div class="door ${i < 8 ? 'wrong-door' : ''}" onclick="${i < 8 ? 'showMessage(\"Ловушка!\", \"error\")' : 'openDoor(' + (13 + i - 8) + ')'}">
-                        Дверь ${i + 1}
+                        ${i + 1}
                         <div class="door-knob"></div>
                     </div>
                 `).join('')}
@@ -259,10 +215,8 @@ const roomDefinitions = {
     14: {
         title: "Комната 14",
         content: `
-            <div class="long-room" style="min-height: 800px;">
-                <div class="room-section">
-                    <p>Очень длинный коридор с камнем...</p>
-                </div>
+            <div class="long-room">
+                <div class="room-text">Длинный коридор с камнем...</div>
                 <div class="room-section">
                     <div class="stone" onmousedown="moveStone(this)" ontouchstart="moveStone(this)">
                         Камень
@@ -280,9 +234,7 @@ const roomDefinitions = {
     15: {
         title: "Комната 15",
         content: `
-            <div class="room-section">
-                <p>Туалет</p>
-            </div>
+            <div class="room-text">Туалет</div>
             <div class="room-section">
                 <div class="toilet"></div>
             </div>
@@ -311,7 +263,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Загрузка сохраненного состояния
 function loadGameState() {
-    const savedState = localStorage.getItem('roomGameIndex');
+    const savedState = localStorage.getItem('doorsOffIndex');
     if (savedState) {
         const parsed = JSON.parse(savedState);
         gameState.index = { ...gameState.index, ...parsed };
@@ -320,7 +272,7 @@ function loadGameState() {
 
 // Сохранение состояния
 function saveGameState() {
-    localStorage.setItem('roomGameIndex', JSON.stringify(gameState.index));
+    localStorage.setItem('doorsOffIndex', JSON.stringify(gameState.index));
 }
 
 // Начало игры
@@ -331,6 +283,7 @@ function startGame() {
     gameState.temporalActive = false;
     gameState.gameActive = true;
 
+    // Показываем игровой экран, скрываем меню
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('game-screen').style.display = 'block';
     document.getElementById('index-screen').style.display = 'none';
@@ -340,6 +293,8 @@ function startGame() {
 
 // Загрузка комнаты
 function loadRoom(roomNumber) {
+    console.log('Загружаем комнату:', roomNumber);
+    
     gameState.currentRoom = roomNumber;
     
     const room = roomDefinitions[roomNumber];
@@ -348,6 +303,8 @@ function loadRoom(roomNumber) {
         document.getElementById('room-content').innerHTML = room.content;
         updateKeyStatus();
         updateMonstersCount();
+    } else {
+        console.error('Комната не найдена:', roomNumber);
     }
 }
 
@@ -373,7 +330,7 @@ function openDoor(nextRoom) {
     if (!gameState.gameActive) return;
     
     if (!gameState.hasKey && gameState.currentRoom !== 1) {
-        showMessage('Сначала найдите ключ!', 'warning');
+        showMessage('Нужен ключ!', 'warning');
         return;
     }
 
@@ -390,7 +347,7 @@ function openDoor(nextRoom) {
 // Проверить дверь (для комнат где ключ обязателен)
 function checkDoor(nextRoom) {
     if (!gameState.hasKey) {
-        showMessage('Сначала найдите ключ!', 'warning');
+        showMessage('Нужен ключ!', 'warning');
         return;
     }
     openDoor(nextRoom);
@@ -404,7 +361,7 @@ function spawnTemporal(nextRoom) {
     document.getElementById('temporal-warning').style.display = 'flex';
     updateMonstersCount();
     
-    showMessage('Появился ВРЕМЕННОЙ! Откройте дверь чтобы спастись!', 'error');
+    showMessage('ВРЕМЕННОЙ! Беги!', 'error');
 
     // Таймер смерти через 5 секунд
     gameState.temporalTimer = setTimeout(() => {
@@ -415,14 +372,16 @@ function spawnTemporal(nextRoom) {
 
     // Сохраняем следующую комнату для перехода
     const temporalWarning = document.getElementById('temporal-warning');
-    temporalWarning.onclick = () => {
+    const clickHandler = () => {
         if (gameState.temporalActive) {
             clearTimeout(gameState.temporalTimer);
             gameState.temporalActive = false;
             temporalWarning.style.display = 'none';
+            temporalWarning.onclick = null;
             proceedToRoom(nextRoom);
         }
     };
+    temporalWarning.onclick = clickHandler;
 }
 
 // Переход в комнату
@@ -434,9 +393,9 @@ function proceedToRoom(nextRoom) {
 
 // Движение камня
 function moveStone(stone) {
-    stone.style.transform = 'translateX(100px)';
-    stone.style.background = 'linear-gradient(135deg, #6d4c41, #5d4037)';
-    stone.textContent = 'Отодвинут';
+    stone.style.transform = 'translateX(80px)';
+    stone.style.background = '#6d4c41';
+    stone.textContent = '✓';
     stone.style.cursor = 'default';
     stone.onmousedown = null;
     stone.ontouchstart = null;
@@ -445,15 +404,15 @@ function moveStone(stone) {
         const hiddenDoor = document.getElementById('hidden-door');
         if (hiddenDoor) {
             hiddenDoor.style.display = 'flex';
-            showMessage('Камень отодвинут! Появилась дверь.', 'success');
+            showMessage('Дверь открыта!', 'success');
         }
-    }, 1000);
+    }, 800);
 }
 
 // Конец игры
 function gameOver() {
     gameState.gameActive = false;
-    showMessage('ВРЕМЕННОЙ поймал вас! Игра окончена.', 'error');
+    showMessage('ВРЕМЕННОЙ поймал вас!', 'error');
     setTimeout(() => {
         returnToMenu();
     }, 3000);
@@ -509,6 +468,8 @@ function showMessage(text, type) {
     document.body.appendChild(messageDiv);
     
     setTimeout(() => {
-        messageDiv.remove();
+        if (messageDiv.parentNode) {
+            messageDiv.remove();
+        }
     }, 3000);
 }
