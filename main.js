@@ -184,12 +184,16 @@ const roomDefinitions = {
         content: `
             <div class="room-text">Найдите 2 правильные двери из 10</div>
             <div class="many-doors">
-                ${Array.from({length: 10}, (_, i) => `
-                    <div class="door ${i < 8 ? 'wrong-door' : ''}" onclick="${i < 8 ? 'showMessage(\"Ловушка!\", \"error\")' : 'openDoor(' + (13 + i - 8) + ')'}">
-                        ${i + 1}
-                        <div class="door-knob"></div>
-                    </div>
-                `).join('')}
+                <div class="door wrong-door" onclick="showMessage('Ловушка!', 'error')">1<div class="door-knob"></div></div>
+                <div class="door wrong-door" onclick="showMessage('Ловушка!', 'error')">2<div class="door-knob"></div></div>
+                <div class="door wrong-door" onclick="showMessage('Ловушка!', 'error')">3<div class="door-knob"></div></div>
+                <div class="door wrong-door" onclick="showMessage('Ловушка!', 'error')">4<div class="door-knob"></div></div>
+                <div class="door wrong-door" onclick="showMessage('Ловушка!', 'error')">5<div class="door-knob"></div></div>
+                <div class="door wrong-door" onclick="showMessage('Ловушка!', 'error')">6<div class="door-knob"></div></div>
+                <div class="door wrong-door" onclick="showMessage('Ловушка!', 'error')">7<div class="door-knob"></div></div>
+                <div class="door wrong-door" onclick="showMessage('Ловушка!', 'error')">8<div class="door-knob"></div></div>
+                <div class="door" onclick="openDoor(13)">9<div class="door-knob"></div></div>
+                <div class="door" onclick="openDoor(14)">10<div class="door-knob"></div></div>
             </div>
         `
     },
@@ -250,6 +254,7 @@ const roomDefinitions = {
 
 // Инициализация игры
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM загружен');
     loadGameState();
     
     // Кнопки меню
@@ -277,6 +282,7 @@ function saveGameState() {
 
 // Начало игры
 function startGame() {
+    console.log('Начало игры');
     gameState.currentRoom = 1;
     gameState.hasKey = false;
     gameState.monstersMet = 0;
@@ -291,9 +297,13 @@ function startGame() {
     loadRoom(1);
 }
 
-// Загрузка комнаты
+// Загрузка комнаты - ИСПРАВЛЕННАЯ ВЕРСИЯ
 function loadRoom(roomNumber) {
     console.log('Загружаем комнату:', roomNumber);
+    
+    if (roomNumber < 1 || roomNumber > 15) {
+        roomNumber = 1;
+    }
     
     gameState.currentRoom = roomNumber;
     
@@ -303,8 +313,11 @@ function loadRoom(roomNumber) {
         document.getElementById('room-content').innerHTML = room.content;
         updateKeyStatus();
         updateMonstersCount();
+        console.log('Комната загружена:', roomNumber);
     } else {
         console.error('Комната не найдена:', roomNumber);
+        // Если комната не найдена, загружаем комнату 1
+        loadRoom(1);
     }
 }
 
@@ -327,6 +340,8 @@ function updateMonstersCount() {
 
 // Открыть дверь
 function openDoor(nextRoom) {
+    console.log('Открываем дверь в комнату:', nextRoom);
+    
     if (!gameState.gameActive) return;
     
     if (!gameState.hasKey && gameState.currentRoom !== 1) {
@@ -336,6 +351,7 @@ function openDoor(nextRoom) {
 
     // Проверка на временного (15% шанс)
     if (Math.random() < 0.15 && !gameState.temporalActive) {
+        console.log('Появляется временной!');
         spawnTemporal(nextRoom);
         gameState.index.temporal.met = true;
         saveGameState();
@@ -386,6 +402,7 @@ function spawnTemporal(nextRoom) {
 
 // Переход в комнату
 function proceedToRoom(nextRoom) {
+    console.log('Переходим в комнату:', nextRoom);
     gameState.hasKey = false;
     updateKeyStatus();
     loadRoom(nextRoom);
