@@ -44,6 +44,63 @@ for (let i = 1; i <= 100; i++) {
                 </div>
             </div>
         `;
+    } else if (i === 11) {
+        // Комната с камнем
+        content = `
+            <div class="room-text">Зажмите камень чтобы отодвинуть</div>
+            <div class="room-section">
+                <div class="stone" onmousedown="moveStone(this)" ontouchstart="moveStone(this)">
+                    Камень
+                </div>
+            </div>
+            <div class="room-section">
+                <div class="door" onclick="openDoor(12)" style="display: none;" id="hidden-door">
+                    ${roomNumber}
+                    <div class="door-knob"></div>
+                </div>
+            </div>
+        `;
+        needsKey = false;
+    } else if (i === 13) {
+        // Комната с камнем и ключом
+        content = `
+            <div class="room-section">
+                <button class="key" onclick="takeKey()">🔑 Взять ключ</button>
+            </div>
+            <div class="room-section">
+                <div class="stone" onmousedown="moveStone(this)" ontouchstart="moveStone(this)">
+                    Камень
+                </div>
+            </div>
+            <div class="room-section">
+                <div class="door" onclick="openDoor(14)" style="display: none;" id="hidden-door">
+                    ${roomNumber}
+                    <div class="door-knob"></div>
+                </div>
+            </div>
+        `;
+        needsKey = true;
+    } else if (i === 14) {
+        // Длинная комната с камнем
+        content = `
+            <div class="long-room">
+                <div class="room-text">Длинный коридор с камнем... ${roomNumber}</div>
+                <div style="height: 600px;"></div>
+                <div class="room-section">
+                    <div class="stone" onmousedown="moveStone(this)" ontouchstart="moveStone(this)">
+                        Камень
+                    </div>
+                </div>
+                <div style="height: 200px;"></div>
+                <div class="room-section">
+                    <div class="door" onclick="openDoor(15)" style="display: none;" id="hidden-door">
+                        ${roomNumber}
+                        <div class="door-knob"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        needsKey = false;
     } else if (i % 4 === 0) {
         const correctDoor = Math.floor(Math.random() * 3) + 1;
         content = `
@@ -104,7 +161,7 @@ for (let i = 1; i <= 100; i++) {
         needsKey = Math.random() > 0.7;
     }
     
-    if (needsKey && i !== 1) {
+    if (needsKey && i !== 1 && i !== 11 && i !== 13 && i !== 14) {
         const keyX = Math.random() * 80 + 10;
         const keyY = Math.random() * 80 + 10;
         content = `
@@ -144,6 +201,10 @@ function startGame() {
     document.getElementById('game-screen').style.display = 'block';
     document.getElementById('index-screen').style.display = 'none';
     
+    // Сброс эффекта темной комнаты
+    document.body.style.background = '#0a0a0a';
+    document.body.style.opacity = '1';
+    
     loadRoom(1);
     startMonsterTimers();
 }
@@ -158,19 +219,49 @@ function loadRoom(roomNumber) {
         document.getElementById('room-title').textContent = room.title;
         document.getElementById('room-content').innerHTML = room.content;
         
+        // Сброс прозрачности при загрузке комнаты
+        document.body.style.opacity = '1';
+        
+        // Проверка на появление тьмы
         if (Math.random() < gameState.monsters.darkness.chance) {
-            document.body.style.background = '#000000';
-            gameState.index.darkness.met = true;
-            setTimeout(() => {
-                if (gameState.gameActive) document.body.style.background = '#0a0a0a';
-            }, 5000);
+            activateDarkness();
         }
     }
+}
+
+function activateDarkness() {
+    gameState.index.darkness.met = true;
+    document.body.style.background = '#000000';
+    document.body.style.opacity = '0.2'; // 80% прозрачности (20% видимости)
+    
+    setTimeout(() => {
+        if (gameState.gameActive) {
+            document.body.style.background = '#0a0a0a';
+            document.body.style.opacity = '1';
+        }
+    }, 5000);
 }
 
 function takeKey() {
     gameState.hasKey = true;
     showMessage('Ключ получен!', 'success');
+}
+
+function moveStone(stone) {
+    stone.style.transform = 'translateX(80px)';
+    stone.style.background = '#6d4c41';
+    stone.textContent = '✓';
+    stone.style.cursor = 'default';
+    stone.onmousedown = null;
+    stone.ontouchstart = null;
+    
+    setTimeout(() => {
+        const hiddenDoor = document.getElementById('hidden-door');
+        if (hiddenDoor) {
+            hiddenDoor.style.display = 'flex';
+            showMessage('Камень отодвинут! Появилась дверь.', 'success');
+        }
+    }, 800);
 }
 
 function openDoor(nextRoom) {
@@ -485,6 +576,7 @@ function gameOver() {
         document.getElementById('game-screen').style.display = 'none';
         document.getElementById('main-menu').style.display = 'block';
         document.body.style.background = '#0a0a0a';
+        document.body.style.opacity = '1';
     }, 3000);
 }
 
