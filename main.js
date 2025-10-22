@@ -2,7 +2,6 @@
 const gameState = {
     currentRoom: 1,
     hasKey: false,
-    monstersMet: 0,
     temporalActive: false,
     temporalTimer: null,
     gameActive: false,
@@ -15,7 +14,7 @@ const gameState = {
     }
 };
 
-// Определения комнат
+// Определения комнат (только комната и ключ где нужно)
 const roomDefinitions = {
     1: {
         title: "Комната 1",
@@ -29,7 +28,8 @@ const roomDefinitions = {
                     <div class="door-knob"></div>
                 </div>
             </div>
-        `
+        `,
+        needsKey: true
     },
     2: {
         title: "Комната 2",
@@ -40,7 +40,8 @@ const roomDefinitions = {
                     <div class="door-knob"></div>
                 </div>
             </div>
-        `
+        `,
+        needsKey: false
     },
     3: {
         title: "Комната 3",
@@ -54,7 +55,8 @@ const roomDefinitions = {
                     </div>
                 </div>
             </div>
-        `
+        `,
+        needsKey: false
     },
     4: {
         title: "Комната 4",
@@ -70,7 +72,8 @@ const roomDefinitions = {
                     <div class="door-knob"></div>
                 </div>
             </div>
-        `
+        `,
+        needsKey: false
     },
     5: {
         title: "Комната 5",
@@ -86,7 +89,8 @@ const roomDefinitions = {
                     </div>
                 </div>
             </div>
-        `
+        `,
+        needsKey: true
     },
     6: {
         title: "Комната 6",
@@ -94,12 +98,13 @@ const roomDefinitions = {
             <div class="room-text">Найдите спрятанный ключ</div>
             <div class="room-section">
                 <div class="key hidden-object" onclick="takeKey()" style="opacity: 0.3;">🔑</div>
-                <div class="door" onclick="checkDoor(7)">
+                <div class="door" onclick="openDoor(7)">
                     Дверь
                     <div class="door-knob"></div>
                 </div>
             </div>
-        `
+        `,
+        needsKey: true
     },
     7: {
         title: "Комната 7",
@@ -119,7 +124,8 @@ const roomDefinitions = {
                     <div class="door-knob"></div>
                 </div>
             </div>
-        `
+        `,
+        needsKey: false
     },
     8: {
         title: "Комната 8",
@@ -134,7 +140,8 @@ const roomDefinitions = {
                     </div>
                 </div>
             </div>
-        `
+        `,
+        needsKey: false
     },
     9: {
         title: "Комната 9",
@@ -146,7 +153,8 @@ const roomDefinitions = {
                     <div class="door-knob"></div>
                 </div>
             </div>
-        `
+        `,
+        needsKey: false
     },
     10: {
         title: "Комната 10",
@@ -160,7 +168,8 @@ const roomDefinitions = {
                     <div class="door-knob"></div>
                 </div>
             </div>
-        `
+        `,
+        needsKey: true
     },
     11: {
         title: "Комната 11",
@@ -177,7 +186,8 @@ const roomDefinitions = {
                     <div class="door-knob"></div>
                 </div>
             </div>
-        `
+        `,
+        needsKey: false
     },
     12: {
         title: "Комната 12",
@@ -195,7 +205,8 @@ const roomDefinitions = {
                 <div class="door" onclick="openDoor(13)">9<div class="door-knob"></div></div>
                 <div class="door" onclick="openDoor(14)">10<div class="door-knob"></div></div>
             </div>
-        `
+        `,
+        needsKey: false
     },
     13: {
         title: "Комната 13",
@@ -214,7 +225,8 @@ const roomDefinitions = {
                     <div class="door-knob"></div>
                 </div>
             </div>
-        `
+        `,
+        needsKey: true
     },
     14: {
         title: "Комната 14",
@@ -233,7 +245,8 @@ const roomDefinitions = {
                     </div>
                 </div>
             </div>
-        `
+        `,
+        needsKey: false
     },
     15: {
         title: "Комната 15",
@@ -248,25 +261,21 @@ const roomDefinitions = {
                     <div class="door-knob"></div>
                 </div>
             </div>
-        `
+        `,
+        needsKey: false
     }
 };
 
 // Инициализация игры
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM загружен');
     loadGameState();
     
-    // Кнопки меню
     document.querySelector('.play-game').addEventListener('click', startGame);
     document.querySelector('.index-see').addEventListener('click', showIndex);
-    
-    // Кнопки навигации
     document.getElementById('back-btn').addEventListener('click', returnToMenu);
     document.getElementById('index-back-btn').addEventListener('click', returnToMenu);
 });
 
-// Загрузка сохраненного состояния
 function loadGameState() {
     const savedState = localStorage.getItem('doorsOffIndex');
     if (savedState) {
@@ -275,21 +284,16 @@ function loadGameState() {
     }
 }
 
-// Сохранение состояния
 function saveGameState() {
     localStorage.setItem('doorsOffIndex', JSON.stringify(gameState.index));
 }
 
-// Начало игры
 function startGame() {
-    console.log('Начало игры');
     gameState.currentRoom = 1;
     gameState.hasKey = false;
-    gameState.monstersMet = 0;
     gameState.temporalActive = false;
     gameState.gameActive = true;
 
-    // Показываем игровой экран, скрываем меню
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('game-screen').style.display = 'block';
     document.getElementById('index-screen').style.display = 'none';
@@ -297,13 +301,8 @@ function startGame() {
     loadRoom(1);
 }
 
-// Загрузка комнаты - ИСПРАВЛЕННАЯ ВЕРСИЯ
 function loadRoom(roomNumber) {
-    console.log('Загружаем комнату:', roomNumber);
-    
-    if (roomNumber < 1 || roomNumber > 15) {
-        roomNumber = 1;
-    }
+    if (roomNumber < 1 || roomNumber > 15) roomNumber = 1;
     
     gameState.currentRoom = roomNumber;
     
@@ -311,47 +310,24 @@ function loadRoom(roomNumber) {
     if (room) {
         document.getElementById('room-title').textContent = room.title;
         document.getElementById('room-content').innerHTML = room.content;
-        updateKeyStatus();
-        updateMonstersCount();
-        console.log('Комната загружена:', roomNumber);
-    } else {
-        console.error('Комната не найдена:', roomNumber);
-        // Если комната не найдена, загружаем комнату 1
-        loadRoom(1);
     }
 }
 
-// Взять ключ
 function takeKey() {
     gameState.hasKey = true;
-    updateKeyStatus();
     showMessage('Ключ получен!', 'success');
 }
 
-// Обновить статус ключа
-function updateKeyStatus() {
-    document.getElementById('key-status').textContent = gameState.hasKey ? '✅' : '❌';
-}
-
-// Обновить счетчик монстров
-function updateMonstersCount() {
-    document.getElementById('monsters-count').textContent = gameState.monstersMet;
-}
-
-// Открыть дверь
 function openDoor(nextRoom) {
-    console.log('Открываем дверь в комнату:', nextRoom);
-    
     if (!gameState.gameActive) return;
     
-    if (!gameState.hasKey && gameState.currentRoom !== 1) {
+    const currentRoom = roomDefinitions[gameState.currentRoom];
+    if (currentRoom.needsKey && !gameState.hasKey) {
         showMessage('Нужен ключ!', 'warning');
         return;
     }
 
-    // Проверка на временного (15% шанс)
     if (Math.random() < 0.15 && !gameState.temporalActive) {
-        console.log('Появляется временной!');
         spawnTemporal(nextRoom);
         gameState.index.temporal.met = true;
         saveGameState();
@@ -360,35 +336,18 @@ function openDoor(nextRoom) {
     }
 }
 
-// Проверить дверь (для комнат где ключ обязателен)
-function checkDoor(nextRoom) {
-    if (!gameState.hasKey) {
-        showMessage('Нужен ключ!', 'warning');
-        return;
-    }
-    openDoor(nextRoom);
-}
-
-// Появление временного
 function spawnTemporal(nextRoom) {
     gameState.temporalActive = true;
-    gameState.monstersMet++;
     
     document.getElementById('temporal-warning').style.display = 'flex';
-    updateMonstersCount();
-    
     showMessage('ВРЕМЕННОЙ! Беги!', 'error');
 
-    // Таймер смерти через 5 секунд
     gameState.temporalTimer = setTimeout(() => {
-        if (gameState.temporalActive) {
-            gameOver();
-        }
+        if (gameState.temporalActive) gameOver();
     }, 5000);
 
-    // Сохраняем следующую комнату для перехода
     const temporalWarning = document.getElementById('temporal-warning');
-    const clickHandler = () => {
+    temporalWarning.onclick = () => {
         if (gameState.temporalActive) {
             clearTimeout(gameState.temporalTimer);
             gameState.temporalActive = false;
@@ -397,18 +356,13 @@ function spawnTemporal(nextRoom) {
             proceedToRoom(nextRoom);
         }
     };
-    temporalWarning.onclick = clickHandler;
 }
 
-// Переход в комнату
 function proceedToRoom(nextRoom) {
-    console.log('Переходим в комнату:', nextRoom);
     gameState.hasKey = false;
-    updateKeyStatus();
     loadRoom(nextRoom);
 }
 
-// Движение камня
 function moveStone(stone) {
     stone.style.transform = 'translateX(80px)';
     stone.style.background = '#6d4c41';
@@ -426,16 +380,12 @@ function moveStone(stone) {
     }, 800);
 }
 
-// Конец игры
 function gameOver() {
     gameState.gameActive = false;
     showMessage('ВРЕМЕННОЙ поймал вас!', 'error');
-    setTimeout(() => {
-        returnToMenu();
-    }, 3000);
+    setTimeout(returnToMenu, 3000);
 }
 
-// Вернуться в меню
 function returnToMenu() {
     document.getElementById('main-menu').style.display = 'block';
     document.getElementById('game-screen').style.display = 'none';
@@ -448,16 +398,13 @@ function returnToMenu() {
     }
 }
 
-// Показать индекс
 function showIndex() {
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('game-screen').style.display = 'none';
     document.getElementById('index-screen').style.display = 'block';
-    
     updateIndexDisplay();
 }
 
-// Обновление отображения индекса
 function updateIndexDisplay() {
     const indexContainer = document.getElementById('index-container');
     indexContainer.innerHTML = '';
@@ -473,7 +420,6 @@ function updateIndexDisplay() {
     });
 }
 
-// Показать сообщение
 function showMessage(text, type) {
     const existingMessages = document.querySelectorAll('.message');
     existingMessages.forEach(msg => msg.remove());
@@ -481,12 +427,9 @@ function showMessage(text, type) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}`;
     messageDiv.textContent = text;
-    
     document.body.appendChild(messageDiv);
     
     setTimeout(() => {
-        if (messageDiv.parentNode) {
-            messageDiv.remove();
-        }
+        if (messageDiv.parentNode) messageDiv.remove();
     }, 3000);
 }
