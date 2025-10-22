@@ -5,7 +5,7 @@ const gameState = {
     temporalActive: false,
     temporalTimer: null,
     gameActive: false,
-    monsterActive: false, // Флаг что монстр активен
+    monsterActive: false,
     index: {
         temporal: { name: "Временной", description: "Появляется при открытии двери с 15% шансом. Убивает через 5 секунд.", met: false },
         redCreature: { name: "Красная тварь", description: "Появляется каждые 10-15 секунд. Требует нажать кнопку за 1.5 секунды.", met: false },
@@ -136,6 +136,8 @@ function startGame() {
     Object.values(gameState.monsters).forEach(monster => {
         monster.active = false;
         if (monster.timer) clearTimeout(monster.timer);
+        if (monster.count) monster.count = 0;
+        if (monster.clicks) monster.clicks = 0;
     });
 
     document.getElementById('main-menu').style.display = 'none';
@@ -285,7 +287,7 @@ function spawnEyePerformer(nextRoom) {
                 return;
             }
             
-            progress -= 2; // -10% каждые 0.5 сек
+            progress -= 2;
             document.getElementById('eye-progress').style.width = progress + '%';
             
             if (progress <= 0) {
@@ -298,9 +300,10 @@ function spawnEyePerformer(nextRoom) {
                 monster.active = false;
                 gameState.monsterActive = false;
                 document.getElementById('eye-performer-overlay').style.display = 'none';
+                showMessage('Совершитель глаз побежден!', 'success');
                 proceedToRoom(nextRoom);
             }
-        }, 500);
+        }, 100);
         
         const requirementElement = document.getElementById('eye-requirement');
         requirementElement.onclick = function() {
@@ -313,6 +316,16 @@ function spawnEyePerformer(nextRoom) {
             }
             progress = Math.max(0, Math.min(100, progress));
             document.getElementById('eye-progress').style.width = progress + '%';
+            
+            if (progress >= 100) {
+                clearInterval(gameTimer);
+                clearInterval(requirementTimer);
+                monster.active = false;
+                gameState.monsterActive = false;
+                document.getElementById('eye-performer-overlay').style.display = 'none';
+                showMessage('Совершитель глаз побежден!', 'success');
+                proceedToRoom(nextRoom);
+            }
         };
     }
 }
@@ -336,6 +349,7 @@ function spawnBright(nextRoom) {
         monster.active = false;
         gameState.monsterActive = false;
         document.getElementById('bright-overlay').style.display = 'none';
+        showMessage('ЯРКИЙ побежден!', 'success');
         proceedToRoom(nextRoom);
     };
 }
@@ -345,7 +359,6 @@ function clickBright() {
     monster.clicks++;
     document.getElementById('bright-counter').textContent = monster.clicks + '/20';
     
-    // Анимация при нажатии
     const ball = document.getElementById('bright-ball');
     ball.style.transform = 'scale(0.8)';
     setTimeout(() => ball.style.transform = 'scale(1)', 100);
@@ -416,7 +429,6 @@ function spawnGreenCreature() {
     document.getElementById('green-creature-overlay').style.display = 'flex';
     document.getElementById('green-timer').textContent = timeLeft.toFixed(1);
     
-    // Делаем кнопку неактивной
     const greenButton = document.getElementById('green-button');
     greenButton.onclick = failGreenCreature;
     
@@ -455,14 +467,12 @@ function gameOver() {
     gameState.monsterActive = false;
     showMessage('Ты умер!', 'error');
     
-    // Скрываем всех монстров
     document.getElementById('temporal-warning').style.display = 'none';
     document.getElementById('red-creature-overlay').style.display = 'none';
     document.getElementById('green-creature-overlay').style.display = 'none';
     document.getElementById('eye-performer-overlay').style.display = 'none';
     document.getElementById('bright-overlay').style.display = 'none';
     
-    // Сброс таймеров
     Object.values(gameState.monsters).forEach(monster => {
         monster.active = false;
         if (monster.timer) {
