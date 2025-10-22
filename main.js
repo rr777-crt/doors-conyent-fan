@@ -5,6 +5,15 @@ const gameState = {
     temporalActive: false,
     temporalTimer: null,
     gameActive: false,
+    monsterActive: false, // Флаг что монстр активен
+    index: {
+        temporal: { name: "Временной", description: "Появляется при открытии двери с 15% шансом. Убивает через 5 секунд.", met: false },
+        redCreature: { name: "Красная тварь", description: "Появляется каждые 10-15 секунд. Требует нажать кнопку за 1.5 секунды.", met: false },
+        greenCreature: { name: "Зеленая тварь", description: "Появляется каждые 10-15 секунд. Нельзя нажимать кнопку 1.5 секунды.", met: false },
+        eyePerformer: { name: "Совершитель глаз", description: "Появляется при открытии двери с 20% шансом (макс 2 раза). Требует выполнения команд.", met: false },
+        bright: { name: "ЯРКИЙ", description: "Появляется при открытии двери с 10% шансом. Нужно нажать 20 раз на шар.", met: false },
+        darkness: { name: "Тьма", description: "Появляется при открытии двери с 35% шансом. Комната становится темной.", met: false }
+    },
     monsters: {
         temporal: { chance: 0.15, active: false },
         redCreature: { chance: 0.12, active: false, timer: null },
@@ -18,16 +27,12 @@ const gameState = {
 // Генерация комнат с номерами 001-100
 const roomDefinitions = {};
 
-// Создаем 100 комнат
 for (let i = 1; i <= 100; i++) {
     const roomNumber = i.toString().padStart(3, '0');
-    
-    // Определяем тип комнаты
     let content = '';
     let needsKey = i !== 1;
-    
+
     if (i === 1) {
-        // Комната 1 - всегда с ключом в центре
         content = `
             <div class="room-section">
                 <button class="key" onclick="takeKey()">🔑 Взять ключ</button>
@@ -40,7 +45,6 @@ for (let i = 1; i <= 100; i++) {
             </div>
         `;
     } else if (i % 4 === 0) {
-        // Комнаты с выбором дверей
         const correctDoor = Math.floor(Math.random() * 3) + 1;
         content = `
             <div class="room-text">Выбери правильную дверь</div>
@@ -56,7 +60,6 @@ for (let i = 1; i <= 100; i++) {
         `;
         needsKey = Math.random() > 0.5;
     } else if (i % 7 === 0) {
-        // Длинные комнаты
         content = `
             <div class="long-room">
                 <div class="room-text">Длинный коридор... ${roomNumber}</div>
@@ -71,7 +74,6 @@ for (let i = 1; i <= 100; i++) {
         `;
         needsKey = Math.random() > 0.3;
     } else if (i % 10 === 0) {
-        // Комнаты с 10 дверями
         const correctDoors = [Math.floor(Math.random() * 5) + 1, Math.floor(Math.random() * 5) + 6];
         content = `
             <div class="room-text">Найди 2 правильные двери</div>
@@ -91,7 +93,6 @@ for (let i = 1; i <= 100; i++) {
         `;
         needsKey = true;
     } else {
-        // Обычные комнаты
         content = `
             <div class="room-section">
                 <div class="door" onclick="openDoor(${i + 1})">
@@ -103,7 +104,6 @@ for (let i = 1; i <= 100; i++) {
         needsKey = Math.random() > 0.7;
     }
     
-    // Добавляем ключ в случайное место (кроме комнаты 1)
     if (needsKey && i !== 1) {
         const keyX = Math.random() * 80 + 10;
         const keyY = Math.random() * 80 + 10;
@@ -123,14 +123,16 @@ for (let i = 1; i <= 100; i++) {
 // Инициализация игры
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('.play-game').addEventListener('click', startGame);
+    document.querySelector('.index-see').addEventListener('click', showIndex);
+    document.getElementById('index-back-btn').addEventListener('click', returnToMenu);
 });
 
 function startGame() {
     gameState.currentRoom = 1;
     gameState.hasKey = false;
     gameState.gameActive = true;
+    gameState.monsterActive = false;
     
-    // Сброс монстров
     Object.values(gameState.monsters).forEach(monster => {
         monster.active = false;
         if (monster.timer) clearTimeout(monster.timer);
@@ -138,6 +140,7 @@ function startGame() {
 
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('game-screen').style.display = 'block';
+    document.getElementById('index-screen').style.display = 'none';
     
     loadRoom(1);
     startMonsterTimers();
@@ -153,9 +156,9 @@ function loadRoom(roomNumber) {
         document.getElementById('room-title').textContent = room.title;
         document.getElementById('room-content').innerHTML = room.content;
         
-        // Случайное появление тьмы
         if (Math.random() < gameState.monsters.darkness.chance) {
             document.body.style.background = '#000000';
+            gameState.index.darkness.met = true;
             setTimeout(() => {
                 if (gameState.gameActive) document.body.style.background = '#0a0a0a';
             }, 5000);
@@ -169,7 +172,7 @@ function takeKey() {
 }
 
 function openDoor(nextRoom) {
-    if (!gameState.gameActive) return;
+    if (!gameState.gameActive || gameState.monsterActive) return;
     
     const currentRoom = roomDefinitions[gameState.currentRoom];
     if (currentRoom.needsKey && !gameState.hasKey) {
@@ -177,39 +180,36 @@ function openDoor(nextRoom) {
         return;
     }
 
-    // Проверка на монстров при открытии двери
     checkDoorMonsters(nextRoom);
 }
 
 function checkDoorMonsters(nextRoom) {
     const monsters = gameState.monsters;
     
-    // Временной
     if (Math.random() < monsters.temporal.chance && !monsters.temporal.active) {
         spawnTemporal(nextRoom);
         return;
     }
     
-    // Совершитель глаз (максимум 2 раза за игру)
     if (Math.random() < monsters.eyePerformer.chance && !monsters.eyePerformer.active && 
         monsters.eyePerformer.count < monsters.eyePerformer.maxCount) {
         spawnEyePerformer(nextRoom);
         return;
     }
     
-    // ЯРКИЙ
     if (Math.random() < monsters.bright.chance && !monsters.bright.active) {
         spawnBright(nextRoom);
         return;
     }
     
-    // Если монстры не появились, переходим в комнату
     proceedToRoom(nextRoom);
 }
 
 function spawnTemporal(nextRoom) {
     const monster = gameState.monsters.temporal;
     monster.active = true;
+    gameState.monsterActive = true;
+    gameState.index.temporal.met = true;
     
     document.getElementById('temporal-warning').style.display = 'flex';
     showMessage('ВРЕМЕННОЙ! Беги!', 'error');
@@ -223,6 +223,7 @@ function spawnTemporal(nextRoom) {
         if (monster.active) {
             clearTimeout(monster.timer);
             monster.active = false;
+            gameState.monsterActive = false;
             temporalWarning.style.display = 'none';
             temporalWarning.onclick = null;
             proceedToRoom(nextRoom);
@@ -233,67 +234,95 @@ function spawnTemporal(nextRoom) {
 function spawnEyePerformer(nextRoom) {
     const monster = gameState.monsters.eyePerformer;
     monster.active = true;
+    gameState.monsterActive = true;
     monster.count++;
+    gameState.index.eyePerformer.met = true;
     
     let progress = 50;
-    let requirement = 'НАЖМИ!';
+    let requirement = 'ПОДГОТОВКА...';
     let lastAction = 'press';
+    let preparationTime = 2.0;
     
     document.getElementById('eye-performer-overlay').style.display = 'flex';
     document.getElementById('eye-progress').style.width = progress + '%';
     document.getElementById('eye-requirement').textContent = requirement;
+    document.getElementById('eye-timer').textContent = preparationTime.toFixed(1);
     
-    const requirementTimer = setInterval(() => {
+    // Подготовка 2 секунды
+    const preparationTimer = setInterval(() => {
         if (!monster.active) {
-            clearInterval(requirementTimer);
+            clearInterval(preparationTimer);
             return;
         }
         
-        // Меняем требование
-        lastAction = Math.random() > 0.5 ? 'press' : 'dont';
-        requirement = lastAction === 'press' ? 'НАЖМИ!' : 'НЕ НАЖИМАЙ!';
-        document.getElementById('eye-requirement').textContent = requirement;
-    }, 1000);
-    
-    const gameTimer = setInterval(() => {
-        if (!monster.active) {
-            clearInterval(gameTimer);
-            return;
-        }
+        preparationTime -= 0.1;
+        document.getElementById('eye-timer').textContent = preparationTime.toFixed(1);
         
-        progress -= 2;
-        document.getElementById('eye-progress').style.width = progress + '%';
-        
-        if (progress <= 0) {
-            clearInterval(gameTimer);
-            clearInterval(requirementTimer);
-            gameOver();
-        } else if (progress >= 100) {
-            clearInterval(gameTimer);
-            clearInterval(requirementTimer);
-            monster.active = false;
-            document.getElementById('eye-performer-overlay').style.display = 'none';
-            proceedToRoom(nextRoom);
+        if (preparationTime <= 0) {
+            clearInterval(preparationTimer);
+            startEyePerformerGame(nextRoom, monster);
         }
-    }, 200);
+    }, 100);
     
-    // Обработчик нажатий
-    const requirementElement = document.getElementById('eye-requirement');
-    requirementElement.onclick = function() {
-        if (lastAction === 'press') {
-            progress += 15;
-        } else {
-            progress -= 25;
-        }
-        progress = Math.max(0, Math.min(100, progress));
-        document.getElementById('eye-progress').style.width = progress + '%';
-    };
+    function startEyePerformerGame(nextRoom, monster) {
+        document.getElementById('eye-timer').style.display = 'none';
+        
+        const requirementTimer = setInterval(() => {
+            if (!monster.active) {
+                clearInterval(requirementTimer);
+                return;
+            }
+            
+            lastAction = Math.random() > 0.5 ? 'press' : 'dont';
+            requirement = lastAction === 'press' ? 'НАЖМИ!' : 'НЕ НАЖИМАЙ!';
+            document.getElementById('eye-requirement').textContent = requirement;
+        }, 1000);
+        
+        const gameTimer = setInterval(() => {
+            if (!monster.active) {
+                clearInterval(gameTimer);
+                clearInterval(requirementTimer);
+                return;
+            }
+            
+            progress -= 2; // -10% каждые 0.5 сек
+            document.getElementById('eye-progress').style.width = progress + '%';
+            
+            if (progress <= 0) {
+                clearInterval(gameTimer);
+                clearInterval(requirementTimer);
+                gameOver();
+            } else if (progress >= 100) {
+                clearInterval(gameTimer);
+                clearInterval(requirementTimer);
+                monster.active = false;
+                gameState.monsterActive = false;
+                document.getElementById('eye-performer-overlay').style.display = 'none';
+                proceedToRoom(nextRoom);
+            }
+        }, 500);
+        
+        const requirementElement = document.getElementById('eye-requirement');
+        requirementElement.onclick = function() {
+            if (lastAction === 'press') {
+                progress += 20;
+                showMessage('+20%!', 'success');
+            } else {
+                progress -= 10;
+                showMessage('-10%! Ошибка!', 'error');
+            }
+            progress = Math.max(0, Math.min(100, progress));
+            document.getElementById('eye-progress').style.width = progress + '%';
+        };
+    }
 }
 
 function spawnBright(nextRoom) {
     const monster = gameState.monsters.bright;
     monster.active = true;
+    gameState.monsterActive = true;
     monster.clicks = 0;
+    gameState.index.bright.met = true;
     
     document.getElementById('bright-overlay').style.display = 'flex';
     document.getElementById('bright-counter').textContent = '0/20';
@@ -305,6 +334,7 @@ function spawnBright(nextRoom) {
     window.defeatBright = function() {
         clearTimeout(brightTimer);
         monster.active = false;
+        gameState.monsterActive = false;
         document.getElementById('bright-overlay').style.display = 'none';
         proceedToRoom(nextRoom);
     };
@@ -315,15 +345,19 @@ function clickBright() {
     monster.clicks++;
     document.getElementById('bright-counter').textContent = monster.clicks + '/20';
     
+    // Анимация при нажатии
+    const ball = document.getElementById('bright-ball');
+    ball.style.transform = 'scale(0.8)';
+    setTimeout(() => ball.style.transform = 'scale(1)', 100);
+    
     if (monster.clicks >= monster.needed) {
         defeatBright();
     }
 }
 
 function startMonsterTimers() {
-    // Красная и зеленая тварь появляются каждые 10-15 секунд
     setInterval(() => {
-        if (!gameState.gameActive) return;
+        if (!gameState.gameActive || gameState.monsterActive) return;
         
         const monsters = gameState.monsters;
         
@@ -338,6 +372,8 @@ function startMonsterTimers() {
 function spawnRedCreature() {
     const monster = gameState.monsters.redCreature;
     monster.active = true;
+    gameState.monsterActive = true;
+    gameState.index.redCreature.met = true;
     
     let timeLeft = 1.5;
     document.getElementById('red-creature-overlay').style.display = 'flex';
@@ -364,6 +400,7 @@ function spawnRedCreature() {
 function defeatRedCreature() {
     const monster = gameState.monsters.redCreature;
     monster.active = false;
+    gameState.monsterActive = false;
     clearInterval(monster.timer);
     document.getElementById('red-creature-overlay').style.display = 'none';
     showMessage('Красная тварь побеждена!', 'success');
@@ -372,10 +409,16 @@ function defeatRedCreature() {
 function spawnGreenCreature() {
     const monster = gameState.monsters.greenCreature;
     monster.active = true;
+    gameState.monsterActive = true;
+    gameState.index.greenCreature.met = true;
     
     let timeLeft = 1.5;
     document.getElementById('green-creature-overlay').style.display = 'flex';
     document.getElementById('green-timer').textContent = timeLeft.toFixed(1);
+    
+    // Делаем кнопку неактивной
+    const greenButton = document.getElementById('green-button');
+    greenButton.onclick = failGreenCreature;
     
     const timer = setInterval(() => {
         if (!monster.active) {
@@ -389,6 +432,7 @@ function spawnGreenCreature() {
         if (timeLeft <= 0) {
             clearInterval(timer);
             monster.active = false;
+            gameState.monsterActive = false;
             document.getElementById('green-creature-overlay').style.display = 'none';
             showMessage('Зеленая тварь ушла!', 'success');
         }
@@ -408,6 +452,7 @@ function proceedToRoom(nextRoom) {
 
 function gameOver() {
     gameState.gameActive = false;
+    gameState.monsterActive = false;
     showMessage('Ты умер!', 'error');
     
     // Скрываем всех монстров
@@ -431,6 +476,40 @@ function gameOver() {
         document.getElementById('main-menu').style.display = 'block';
         document.body.style.background = '#0a0a0a';
     }, 3000);
+}
+
+function showIndex() {
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('index-screen').style.display = 'block';
+    updateIndexDisplay();
+}
+
+function updateIndexDisplay() {
+    const indexContainer = document.getElementById('index-container');
+    indexContainer.innerHTML = '';
+    
+    Object.entries(gameState.index).forEach(([key, monster]) => {
+        const item = document.createElement('div');
+        item.className = `index-item ${monster.met ? 'unlocked' : ''}`;
+        item.innerHTML = `
+            <h3>${monster.name}</h3>
+            <p>${monster.description}</p>
+        `;
+        indexContainer.appendChild(item);
+    });
+}
+
+function returnToMenu() {
+    document.getElementById('main-menu').style.display = 'block';
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('index-screen').style.display = 'none';
+    
+    if (gameState.temporalActive) {
+        clearTimeout(gameState.temporalTimer);
+        gameState.temporalActive = false;
+        document.getElementById('temporal-warning').style.display = 'none';
+    }
 }
 
 function showMessage(text, type) {
