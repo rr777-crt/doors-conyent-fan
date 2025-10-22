@@ -10,33 +10,17 @@
     <!-- Главное меню -->
     <div id="main-menu" class="container">
         <h1 class="game-title">DOORS-OFF</h1>
-        <button class="btn play-game">Начать игру</button>
-        <button class="btn index-see">Индекс</button>
+        <button class="btn play-game">ИГРАТЬ</button>
     </div>
 
     <!-- Игровой экран -->
     <div id="game-screen" class="container">
         <div class="room-header">
-            <h2 class="room-title" id="room-title">Комната 1</h2>
+            <h2 class="room-title" id="room-title">Комната 001</h2>
         </div>
 
         <div class="room-content" id="room-content">
             <!-- Контент комнаты генерируется через JS -->
-        </div>
-
-        <div style="text-align: center;">
-            <button class="btn" id="back-btn">В меню</button>
-        </div>
-    </div>
-
-    <!-- Индекс монстров -->
-    <div id="index-screen" class="container">
-        <h2 class="section-title">ИНДЕКС</h2>
-        <div class="index-container" id="index-container">
-            <!-- Индекс генерируется через JS -->
-        </div>
-        <div style="text-align: center; margin-top: 20px;">
-            <button class="btn" id="index-back-btn">Назад</button>
         </div>
     </div>
 
@@ -45,6 +29,48 @@
         <div class="temporal-text">
             ВРЕМЕННОЙ!<br>
             <span style="font-size: 1.5rem;">Беги!</span>
+        </div>
+    </div>
+
+    <!-- Красная тварь -->
+    <div class="monster-overlay" id="red-creature-overlay">
+        <div class="monster-container">
+            <h3>КРАСНАЯ ТВАРЬ!</h3>
+            <p>Нажми чтобы отбить!</p>
+            <div class="defend-button" onclick="defeatRedCreature()">ОТБИТЬ</div>
+            <div class="timer" id="red-timer">1.5</div>
+        </div>
+    </div>
+
+    <!-- Зеленая тварь -->
+    <div class="monster-overlay" id="green-creature-overlay">
+        <div class="monster-container">
+            <h3>ЗЕЛЕНАЯ ТВАРЬ!</h3>
+            <p>Не нажимай кнопку!</p>
+            <div class="defend-button green" onclick="failGreenCreature()">НЕ НАЖИМАТЬ</div>
+            <div class="timer" id="green-timer">1.5</div>
+        </div>
+    </div>
+
+    <!-- Совершитель глаз -->
+    <div class="monster-overlay" id="eye-performer-overlay">
+        <div class="monster-container">
+            <h3>СОВЕРШИТЕЛЬ ГЛАЗ</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="eye-progress"></div>
+            </div>
+            <div class="requirement" id="eye-requirement">НАЖМИ!</div>
+            <div class="timer" id="eye-timer">2.0</div>
+        </div>
+    </div>
+
+    <!-- ЯРКИЙ -->
+    <div class="bright-overlay" id="bright-overlay">
+        <div class="bright-container">
+            <h3>ЯРКИЙ!</h3>
+            <p>Нажми 20 раз!</p>
+            <div class="bright-counter" id="bright-counter">0/20</div>
+            <div class="bright-button" onclick="clickBright()">НАЖМИ</div>
         </div>
     </div>
 
