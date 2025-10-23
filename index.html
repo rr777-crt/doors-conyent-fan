@@ -12,6 +12,7 @@
         <h1 class="game-title">DOORS-OFF</h1>
         <button class="btn play-game">ИГРАТЬ</button>
         <button class="btn index-see">ИНДЕКС</button>
+        <button class="btn achievements-btn">ДОСТИЖЕНИЯ</button>
     </div>
 
     <!-- Игровой экран -->
@@ -33,6 +34,17 @@
         </div>
         <div style="text-align: center; margin-top: 20px;">
             <button class="btn" id="index-back-btn">НАЗАД</button>
+        </div>
+    </div>
+
+    <!-- Достижения -->
+    <div id="achievements-screen" class="container">
+        <h2 class="section-title">ДОСТИЖЕНИЯ</h2>
+        <div class="achievements-container" id="achievements-container">
+            <!-- Достижения генерируются через JS -->
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn" id="achievements-back-btn">НАЗАД</button>
         </div>
     </div>
 
@@ -81,6 +93,78 @@
         <div class="bright-ball" id="bright-ball" onclick="clickBright()"></div>
         <div class="bright-counter" id="bright-counter">0/20</div>
     </div>
+
+    <!-- ВВЕРХ -->
+    <div class="monster-overlay" id="figure-overlay">
+        <div class="monster-container">
+            <h3>ВВЕРХ!</h3>
+            <p>Беги через 15 дверей за 30 секунд!</p>
+            <div class="timer" id="figure-timer">30.0</div>
+            <div class="doors-counter" id="figure-doors">0/15</div>
+            <div class="escape-doors" id="escape-doors">
+                <!-- Двери для побега генерируются через JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- СТРАЖ 050 -->
+    <div class="monster-overlay" id="guard-50-overlay">
+        <div class="monster-container">
+            <h3>СТРАЖ 050</h3>
+            <p>Найди код из книг!</p>
+            <div class="code-display" id="guard-code"></div>
+            <div class="books-container" id="guard-books">
+                <!-- Книги генерируются через JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Мини-игра Стража -->
+    <div class="monster-overlay" id="guard-minigame-overlay">
+        <div class="monster-container">
+            <h3>СТРАЖ АТАКУЕТ!</h3>
+            <p>Нажми все зеленые книги за 20 секунд!</p>
+            <div class="timer" id="guard-minigame-timer">20.0</div>
+            <div class="books-container" id="guard-minigame-books">
+                <!-- Книги для мини-игры генерируются через JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- СТРАЖ 100 -->
+    <div class="monster-overlay" id="guard-100-overlay">
+        <div class="monster-container">
+            <h3>ФИНАЛЬНЫЙ СТРАЖ!</h3>
+            <p>Собери 20 ключей! Избегай красных квадратов!</p>
+            <div class="keys-counter" id="guard-keys-counter">0/20</div>
+            <div class="timer" id="guard-100-timer">∞</div>
+            <div class="game-area" id="guard-100-area">
+                <!-- Игровая область генерируется через JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Поедатель -->
+    <div class="seek-warning" id="seek-warning">
+        <div>
+            <h3>ПОЕДАТЕЛЬ!</h3>
+            <p>Прячься в шкаф!</p>
+        </div>
+    </div>
+
+    <!-- Аудио элементы -->
+    <audio id="ambient-music" loop>
+        <source src="audio/ambient.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="figure-music">
+        <source src="audio/figure.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="seek-music">
+        <source src="audio/seek.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="guard-music">
+        <source src="audio/guard.mp3" type="audio/mpeg">
+    </audio>
 
     <script src="main.js"></script>
 </body>
