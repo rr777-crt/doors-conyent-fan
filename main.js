@@ -44,7 +44,7 @@ const gameState = {
         seek: { name: "Поедатель", description: "Появляется в комнатах со шкафами с 10% шансом. Нужно спрятаться в шкаф.", met: false }
     },
     monsters: {
-        temporal: { chance: 0.15, active: false },
+        temporal: { chance: 0.15, active: false, timer: null },
         redCreature: { chance: 0.12, active: false, timer: null },
         greenCreature: { chance: 0.12, active: false, timer: null },
         eyePerformer: { chance: 0.20, active: false, count: 0, maxCount: 2 },
@@ -360,13 +360,19 @@ function unlockAchievement(key) {
 }
 
 function showMessage(text, type) {
+    // Удаляем старые сообщения
+    const oldMessages = document.querySelectorAll('.message');
+    oldMessages.forEach(msg => msg.remove());
+    
     const message = document.createElement('div');
     message.className = `message ${type}`;
     message.textContent = text;
     document.body.appendChild(message);
     
     setTimeout(() => {
-        message.remove();
+        if (message.parentNode) {
+            message.remove();
+        }
     }, 3000);
 }
 
@@ -388,11 +394,21 @@ function startGame() {
         seekAttacks: 0
     };
     
+    // Очищаем все таймеры
     Object.values(gameState.monsters).forEach(monster => {
         monster.active = false;
-        if (monster.timer) clearTimeout(monster.timer);
-        if (monster.flickerTimer) clearTimeout(monster.flickerTimer);
-        if (monster.attackTimer) clearTimeout(monster.attackTimer);
+        if (monster.timer) {
+            clearInterval(monster.timer);
+            monster.timer = null;
+        }
+        if (monster.flickerTimer) {
+            clearTimeout(monster.flickerTimer);
+            monster.flickerTimer = null;
+        }
+        if (monster.attackTimer) {
+            clearTimeout(monster.attackTimer);
+            monster.attackTimer = null;
+        }
         if (monster.count) monster.count = 0;
         if (monster.clicks) monster.clicks = 0;
     });
@@ -412,6 +428,9 @@ function startGame() {
 
 function startMonsterTimers() {
     // Красная тварь
+    if (gameState.monsters.redCreature.timer) {
+        clearInterval(gameState.monsters.redCreature.timer);
+    }
     gameState.monsters.redCreature.timer = setInterval(() => {
         if (gameState.gameActive && !gameState.monsterActive && Math.random() < gameState.monsters.redCreature.chance) {
             spawnRedCreature();
@@ -419,6 +438,9 @@ function startMonsterTimers() {
     }, 10000 + Math.random() * 5000);
 
     // Зеленая тварь
+    if (gameState.monsters.greenCreature.timer) {
+        clearInterval(gameState.monsters.greenCreature.timer);
+    }
     gameState.monsters.greenCreature.timer = setInterval(() => {
         if (gameState.gameActive && !gameState.monsterActive && Math.random() < gameState.monsters.greenCreature.chance) {
             spawnGreenCreature();
@@ -512,8 +534,10 @@ function spawnSeek() {
     showMessage('ПРЯЧЬСЯ В ШКАФ!', 'error');
     
     const seekMusic = document.getElementById('seek-music');
-    seekMusic.currentTime = 0;
-    seekMusic.play().catch(e => console.log('Audio error:', e));
+    if (seekMusic) {
+        seekMusic.currentTime = 0;
+        seekMusic.play().catch(e => console.log('Audio error:', e));
+    }
     
     document.body.classList.add('light-flicker');
     
@@ -532,8 +556,10 @@ function spawnSeek() {
                     showMessage('Вы пережили атаку Поедателя!', 'success');
                     
                     const seekMusic = document.getElementById('seek-music');
-                    seekMusic.pause();
-                    seekMusic.currentTime = 0;
+                    if (seekMusic) {
+                        seekMusic.pause();
+                        seekMusic.currentTime = 0;
+                    }
                 }
             }
         }, 2000);
@@ -629,7 +655,7 @@ function failTrap() {
     }
 }
 
-// Монстры
+// МОНСТРЫ - ИСПРАВЛЕННЫЕ ВЕРСИИ
 function spawnTemporal() {
     if (gameState.monsterActive) return;
     
@@ -648,38 +674,32 @@ function spawnTemporal() {
     }
     gameState.stats.lastTemporalRoom = gameState.currentRoom;
     
-    document.getElementById('temporal-warning').style.display = 'flex';
+    const temporalOverlay = document.getElementById('temporal-warning');
+    temporalOverlay.style.display = 'flex';
     
     let timeLeft = 5;
+    const timerElement = document.createElement('div');
+    timerElement.style.cssText = 'font-size: 3rem; color: white; text-align: center; margin-top: 20px;';
+    timerElement.textContent = timeLeft;
+    temporalOverlay.appendChild(timerElement);
+    
     const timer = setInterval(() => {
         timeLeft--;
+        timerElement.textContent = timeLeft;
+        
         if (timeLeft <= 0) {
             clearInterval(timer);
-            // Убираем оверлей перед завершением игры
-            document.getElementById('temporal-warning').style.display = 'none';
+            temporalOverlay.style.display = 'none';
+            temporalOverlay.removeChild(timerElement);
             gameOver('Временной монстр поймал вас!');
         }
     }, 1000);
     
-    // Добавляем возможность закрыть временного монстра кликом
-    const temporalOverlay = document.getElementById('temporal-warning');
-    temporalOverlay.onclick = function() {
-        clearInterval(timer);
-        document.getElementById('temporal-warning').style.display = 'none';
-        monster.active = false;
-        gameState.monsterActive = false;
-        showMessage('Временной монстр избегнут!', 'success');
-    };
+    // Сохраняем таймер для очистки
+    monster.timer = timer;
     
-    // Автоматическое закрытие через 5 секунд если игрок выжил
-    setTimeout(() => {
-        if (monster.active) {
-            clearInterval(timer);
-            document.getElementById('temporal-warning').style.display = 'none';
-            monster.active = false;
-            gameState.monsterActive = false;
-        }
-    }, 5000);
+    // Временной монстр не блокирует игру - можно продолжать играть
+    showMessage('Временной монстр появился! Уходите в другую комнату за 5 секунд!', 'warning');
 }
 
 function spawnRedCreature() {
@@ -690,21 +710,37 @@ function spawnRedCreature() {
     gameState.monsterActive = true;
     gameState.index.redCreature.met = true;
     
-    document.getElementById('red-creature-overlay').style.display = 'flex';
+    const overlay = document.getElementById('red-creature-overlay');
+    overlay.style.display = 'flex';
     
     let timeLeft = 1.5;
+    const timerElement = document.getElementById('red-timer');
+    timerElement.textContent = timeLeft.toFixed(1);
+    
     const timer = setInterval(() => {
+        if (!monster.active) {
+            clearInterval(timer);
+            return;
+        }
+        
         timeLeft -= 0.1;
-        document.getElementById('red-timer').textContent = timeLeft.toFixed(1);
+        timerElement.textContent = timeLeft.toFixed(1);
+        
         if (timeLeft <= 0) {
             clearInterval(timer);
+            overlay.style.display = 'none';
             gameOver('Красная тварь поймала вас!');
         }
     }, 100);
+    
+    monster.timer = timer;
 }
 
 function defeatRedCreature() {
     const monster = gameState.monsters.redCreature;
+    if (monster.timer) {
+        clearInterval(monster.timer);
+    }
     monster.active = false;
     gameState.monsterActive = false;
     document.getElementById('red-creature-overlay').style.display = 'none';
@@ -720,7 +756,8 @@ function spawnGreenCreature() {
     gameState.monsterActive = true;
     gameState.index.greenCreature.met = true;
     
-    document.getElementById('green-creature-overlay').style.display = 'flex';
+    const overlay = document.getElementById('green-creature-overlay');
+    overlay.style.display = 'flex';
     
     const greenButton = document.getElementById('green-button');
     greenButton.classList.remove('green');
@@ -729,44 +766,9 @@ function spawnGreenCreature() {
     greenButton.onclick = failGreenCreature;
     
     let timeLeft = 1.5;
-    const timer = setInterval(() => {
-        timeLeft -= 0.1;
-        document.getElementById('green-timer').textContent = timeLeft.toFixed(1);
-        if (timeLeft <= 0) {
-            clearInterval(timer);
-            monster.active = false;
-            gameState.monsterActive = false;
-            document.getElementById('green-creature-overlay').style.display = 'none';
-            greenButton.classList.remove('red');
-            greenButton.classList.add('green');
-            greenButton.style.cursor = 'not-allowed';
-            greenButton.onclick = null;
-            unlockAchievement('dontBeatGreen');
-            showMessage('Зеленая тварь побеждена!', 'success');
-        }
-    }, 100);
-}
-
-function spawnGreenCreature() {
-    if (gameState.monsterActive) return;
+    const timerElement = document.getElementById('green-timer');
+    timerElement.textContent = timeLeft.toFixed(1);
     
-    const monster = gameState.monsters.greenCreature;
-    monster.active = true;
-    gameState.monsterActive = true;
-    gameState.index.greenCreature.met = true;
-    
-    document.getElementById('green-creature-overlay').style.display = 'flex';
-    
-    const greenButton = document.getElementById('green-button');
-    greenButton.classList.remove('green');
-    greenButton.classList.add('red');
-    greenButton.style.cursor = 'pointer';
-    
-    // Сохраняем оригинальный обработчик чтобы можно было его убрать
-    greenButton._originalOnclick = greenButton.onclick;
-    greenButton.onclick = failGreenCreature;
-    
-    let timeLeft = 1.5;
     const timer = setInterval(() => {
         if (!monster.active) {
             clearInterval(timer);
@@ -774,16 +776,16 @@ function spawnGreenCreature() {
         }
         
         timeLeft -= 0.1;
-        document.getElementById('green-timer').textContent = timeLeft.toFixed(1);
+        timerElement.textContent = timeLeft.toFixed(1);
         
         if (timeLeft <= 0) {
             clearInterval(timer);
             // УСПЕХ - игрок не нажал кнопку
             monster.active = false;
             gameState.monsterActive = false;
-            document.getElementById('green-creature-overlay').style.display = 'none';
+            overlay.style.display = 'none';
             
-            // Восстанавливаем кнопку в исходное состояние
+            // Восстанавливаем кнопку
             greenButton.classList.remove('red');
             greenButton.classList.add('green');
             greenButton.style.cursor = 'not-allowed';
@@ -794,32 +796,21 @@ function spawnGreenCreature() {
         }
     }, 100);
     
-    // Защита на случай если таймер не сработает
-    setTimeout(() => {
-        if (monster.active) {
-            clearInterval(timer);
-            monster.active = false;
-            gameState.monsterActive = false;
-            document.getElementById('green-creature-overlay').style.display = 'none';
-            greenButton.classList.remove('red');
-            greenButton.classList.add('green');
-            greenButton.style.cursor = 'not-allowed';
-            greenButton.onclick = null;
-        }
-    }, 2000);
+    monster.timer = timer;
 }
 
-// Исправленная функция провала зеленой твари
 function failGreenCreature() {
     const monster = gameState.monsters.greenCreature;
-    const greenButton = document.getElementById('green-button');
+    if (monster.timer) {
+        clearInterval(monster.timer);
+    }
     
-    // Немедленно очищаем все
     monster.active = false;
     gameState.monsterActive = false;
     document.getElementById('green-creature-overlay').style.display = 'none';
     
     // Восстанавливаем кнопку
+    const greenButton = document.getElementById('green-button');
     greenButton.classList.remove('red');
     greenButton.classList.add('green');
     greenButton.style.cursor = 'not-allowed';
@@ -841,34 +832,33 @@ function spawnEyePerformer() {
     
     const requirements = ['Нажми меня!', 'Не нажимай!', 'Быстро нажми!', 'Жди...'];
     const currentReq = requirements[Math.floor(Math.random() * requirements.length)];
+    const requirementElement = document.getElementById('eye-requirement');
     
-    document.getElementById('eye-requirement').textContent = currentReq;
-    document.getElementById('eye-requirement').onclick = function() {
-        if (currentReq === 'Нажми меня!' || currentReq === 'Быстро нажми!') {
-            monster.active = false;
-            gameState.monsterActive = false;
-            document.getElementById('eye-performer-overlay').style.display = 'none';
-            showMessage('Совершитель глаз побежден!', 'success');
-            if (monster.count >= 2) {
-                unlockAchievement('controller');
-            }
-        } else if (currentReq === 'Не нажимай!') {
-            gameOver('Вы нажали когда нельзя было!');
-        }
-    };
+    requirementElement.textContent = currentReq;
+    requirementElement.style.background = '#34495e';
+    requirementElement.style.cursor = 'pointer';
     
     let timeLeft = 2.0;
+    const timerElement = document.getElementById('eye-timer');
+    timerElement.textContent = timeLeft.toFixed(1);
+    
     const timer = setInterval(() => {
+        if (!monster.active) {
+            clearInterval(timer);
+            return;
+        }
+        
         timeLeft -= 0.1;
-        document.getElementById('eye-timer').textContent = timeLeft.toFixed(1);
+        timerElement.textContent = timeLeft.toFixed(1);
         
         if (currentReq === 'Быстро нажми!' && timeLeft < 1.0) {
-            document.getElementById('eye-requirement').style.background = '#e74c3c';
+            requirementElement.style.background = '#e74c3c';
         }
         
         if (timeLeft <= 0) {
             clearInterval(timer);
             if (currentReq === 'Жди...') {
+                // Успех - игрок не нажал
                 monster.active = false;
                 gameState.monsterActive = false;
                 document.getElementById('eye-performer-overlay').style.display = 'none';
@@ -877,10 +867,34 @@ function spawnEyePerformer() {
                     unlockAchievement('controller');
                 }
             } else if (currentReq === 'Быстро нажми!') {
+                // Провал - не успел нажать
                 gameOver('Вы не успели нажать!');
+            } else if (currentReq === 'Нажми меня!') {
+                // Провал - не нажал когда нужно
+                gameOver('Вы не нажали кнопку!');
             }
         }
     }, 100);
+    
+    // Обработчик для кнопки требования
+    requirementElement.onclick = function() {
+        clearInterval(timer);
+        
+        if (currentReq === 'Нажми меня!' || currentReq === 'Быстро нажми!') {
+            // Успех
+            monster.active = false;
+            gameState.monsterActive = false;
+            document.getElementById('eye-performer-overlay').style.display = 'none';
+            showMessage('Совершитель глаз побежден!', 'success');
+            if (monster.count >= 2) {
+                unlockAchievement('controller');
+            }
+        } else if (currentReq === 'Не нажимай!') {
+            // Провал
+            gameOver('Вы нажали когда нельзя было!');
+        }
+        // Для 'Жди...' ничего не делаем - ждем таймер
+    };
 }
 
 function spawnBright() {
@@ -911,6 +925,7 @@ function clickBright() {
     }
 }
 
+// ВВЕРХ МОНСТР
 function spawnFigure() {
     if (gameState.monsterActive) return;
     
@@ -927,8 +942,10 @@ function spawnFigure() {
     document.getElementById('figure-doors').textContent = `0/${monster.totalDoors}`;
     
     const figureMusic = document.getElementById('figure-music');
-    figureMusic.currentTime = 0;
-    figureMusic.play().catch(e => console.log('Audio error:', e));
+    if (figureMusic) {
+        figureMusic.currentTime = 0;
+        figureMusic.play().catch(e => console.log('Audio error:', e));
+    }
     
     generateEscapeDoors();
     
@@ -943,8 +960,10 @@ function spawnFigure() {
         
         if (monster.timeLeft <= 0) {
             clearInterval(timer);
-            figureMusic.pause();
-            figureMusic.currentTime = 0;
+            if (figureMusic) {
+                figureMusic.pause();
+                figureMusic.currentTime = 0;
+            }
             gameOver('Время вышло! ВВЕРХ поймал вас!');
         }
     }, 100);
@@ -971,14 +990,18 @@ function passEscapeDoor(doorNumber) {
     document.getElementById('figure-doors').textContent = `${monster.doorsPassed}/${monster.totalDoors}`;
     
     if (monster.doorsPassed >= monster.totalDoors) {
-        clearInterval(monster.timer);
+        if (monster.timer) {
+            clearInterval(monster.timer);
+        }
         monster.active = false;
         gameState.monsterActive = false;
         document.getElementById('figure-overlay').style.display = 'none';
         
         const figureMusic = document.getElementById('figure-music');
-        figureMusic.pause();
-        figureMusic.currentTime = 0;
+        if (figureMusic) {
+            figureMusic.pause();
+            figureMusic.currentTime = 0;
+        }
         
         unlockAchievement('youCant');
         showMessage('ВВЕРХ побежден!', 'success');
@@ -986,6 +1009,7 @@ function passEscapeDoor(doorNumber) {
     }
 }
 
+// СТРАЖ 050 - ИСПРАВЛЕННАЯ ВЕРСИЯ
 function startGuard50() {
     if (gameState.monsterActive || gameState.isHiding) return;
     
@@ -996,10 +1020,13 @@ function startGuard50() {
     
     monster.code = Array.from({length: 4}, () => Math.floor(Math.random() * 10)).join('');
     monster.booksOpened = 0;
+    monster.minigameActive = false;
     
     const guardMusic = document.getElementById('guard-music');
-    guardMusic.currentTime = 0;
-    guardMusic.play().catch(e => console.log('Audio error:', e));
+    if (guardMusic) {
+        guardMusic.currentTime = 0;
+        guardMusic.play().catch(e => console.log('Audio error:', e));
+    }
     
     document.getElementById('guard-50-overlay').style.display = 'flex';
     document.getElementById('guard-code').textContent = '????';
@@ -1012,7 +1039,14 @@ function generateBooks() {
     container.innerHTML = '';
     const monster = gameState.monsters.guard50;
     
-    const codePositions = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
+    const codePositions = [];
+    while (codePositions.length < 4) {
+        const pos = Math.floor(Math.random() * 16);
+        if (!codePositions.includes(pos)) {
+            codePositions.push(pos);
+        }
+    }
+    
     const codeDigits = monster.code.split('');
     
     for (let i = 0; i < 16; i++) {
@@ -1025,38 +1059,36 @@ function generateBooks() {
             book.dataset.digit = codeDigits[codeIndex];
         }
         
-        book.onclick = () => openBook(book, i);
+        book.onclick = function() {
+            if (this.classList.contains('green') || this.classList.contains('red')) return;
+            
+            if (this.dataset.digit) {
+                this.textContent = this.dataset.digit;
+                this.classList.add('green');
+                monster.booksOpened++;
+                
+                const codeDisplay = document.getElementById('guard-code');
+                const currentCode = codeDisplay.textContent.split('');
+                const digitIndex = currentCode.indexOf('?');
+                if (digitIndex !== -1) {
+                    currentCode[digitIndex] = this.dataset.digit;
+                    codeDisplay.textContent = currentCode.join('');
+                }
+                
+                if (Math.random() < 0.3 && !monster.minigameActive) {
+                    startGuardMinigame();
+                }
+                
+                if (monster.booksOpened >= 4) {
+                    setTimeout(completeGuard50, 1000);
+                }
+            } else {
+                this.classList.add('red');
+                this.textContent = 'X';
+            }
+        };
+        
         container.appendChild(book);
-    }
-}
-
-function openBook(book, index) {
-    const monster = gameState.monsters.guard50;
-    
-    if (book.dataset.digit) {
-        book.textContent = book.dataset.digit;
-        book.classList.add('green');
-        monster.booksOpened++;
-        
-        const codeDisplay = document.getElementById('guard-code');
-        const currentCode = codeDisplay.textContent.split('');
-        const digitIndex = currentCode.indexOf('?');
-        if (digitIndex !== -1) {
-            currentCode[digitIndex] = book.dataset.digit;
-            codeDisplay.textContent = currentCode.join('');
-        }
-        
-        if (Math.random() < 0.3 && !monster.minigameActive) {
-            startGuardMinigame();
-        }
-        
-        if (monster.booksOpened >= 4) {
-            setTimeout(completeGuard50, 1000);
-        }
-    } else {
-        book.classList.add('red');
-        book.textContent = 'X';
-        book.onclick = null;
     }
 }
 
@@ -1067,13 +1099,14 @@ function startGuardMinigame() {
     document.getElementById('guard-minigame-overlay').style.display = 'flex';
     
     let timeLeft = 20;
-    document.getElementById('guard-minigame-timer').textContent = timeLeft.toFixed(1);
+    const timerElement = document.getElementById('guard-minigame-timer');
+    timerElement.textContent = timeLeft.toFixed(1);
     
     generateMinigameBooks();
     
     const timer = setInterval(() => {
         timeLeft -= 0.1;
-        document.getElementById('guard-minigame-timer').textContent = timeLeft.toFixed(1);
+        timerElement.textContent = timeLeft.toFixed(1);
         
         if (timeLeft <= 0) {
             clearInterval(timer);
@@ -1094,25 +1127,34 @@ function generateMinigameBooks() {
     const container = document.getElementById('guard-minigame-books');
     container.innerHTML = '';
     
-    for (let i = 0; i < 12; i++) {
+    const totalBooks = 12;
+    const greenBooksCount = Math.floor(totalBooks * 0.4); // 40% зеленых книг
+    
+    // Создаем массив с зелеными и красными книгами
+    const books = [];
+    for (let i = 0; i < greenBooksCount; i++) books.push('green');
+    for (let i = 0; i < totalBooks - greenBooksCount; i++) books.push('red');
+    
+    // Перемешиваем
+    books.sort(() => Math.random() - 0.5);
+    
+    books.forEach((type, index) => {
         const book = document.createElement('div');
-        book.className = 'book';
+        book.className = `book ${type}`;
         book.textContent = '📕';
         
-        if (Math.random() < 0.4) {
-            book.classList.add('green');
+        if (type === 'green') {
             book.onclick = function() {
                 this.remove();
             };
         } else {
-            book.classList.add('red');
             book.onclick = function() {
                 gameOver('Неправильная книга!');
             };
         }
         
         container.appendChild(book);
-    }
+    });
 }
 
 function completeGuard50() {
@@ -1122,14 +1164,17 @@ function completeGuard50() {
     document.getElementById('guard-50-overlay').style.display = 'none';
     
     const guardMusic = document.getElementById('guard-music');
-    guardMusic.pause();
-    guardMusic.currentTime = 0;
+    if (guardMusic) {
+        guardMusic.pause();
+        guardMusic.currentTime = 0;
+    }
     
     unlockAchievement('memory');
     showMessage('Страж 050 побежден!', 'success');
     proceedToRoom(51);
 }
 
+// СТРАЖ 100 - ИСПРАВЛЕННАЯ ВЕРСИЯ
 function startGuard100() {
     if (gameState.monsterActive || gameState.isHiding) return;
     
@@ -1142,8 +1187,10 @@ function startGuard100() {
     monster.squares = [];
     
     const guardMusic = document.getElementById('guard-music');
-    guardMusic.currentTime = 0;
-    guardMusic.play().catch(e => console.log('Audio error:', e));
+    if (guardMusic) {
+        guardMusic.currentTime = 0;
+        guardMusic.play().catch(e => console.log('Audio error:', e));
+    }
     
     document.getElementById('guard-100-overlay').style.display = 'flex';
     document.getElementById('guard-keys-counter').textContent = '0/20';
@@ -1198,8 +1245,10 @@ function completeGuard100() {
     document.getElementById('guard-100-overlay').style.display = 'none';
     
     const guardMusic = document.getElementById('guard-music');
-    guardMusic.pause();
-    guardMusic.currentTime = 0;
+    if (guardMusic) {
+        guardMusic.pause();
+        guardMusic.currentTime = 0;
+    }
     
     unlockAchievement('theEnd');
     showMessage('ФИНАЛЬНЫЙ СТРАЖ ПОБЕЖДЕН! ИГРА ПРОЙДЕНА!', 'success');
@@ -1232,7 +1281,7 @@ function stopAllMonsters() {
         if (monster.active) {
             monster.active = false;
             if (monster.timer) {
-                clearTimeout(monster.timer);
+                clearInterval(monster.timer);
                 monster.timer = null;
             }
             if (monster.flickerTimer) {
@@ -1246,23 +1295,20 @@ function stopAllMonsters() {
         }
     });
     
-    // Останавливаем всю музыку
     const audios = document.querySelectorAll('audio');
     audios.forEach(audio => {
         audio.pause();
         audio.currentTime = 0;
     });
     
-    // Убираем все визуальные эффекты
     document.body.classList.remove('light-flicker');
     
-    // Скрываем все оверлеи монстров
     const overlays = document.querySelectorAll('.monster-overlay, .bright-overlay, .temporal-warning, .seek-warning');
     overlays.forEach(overlay => {
         overlay.style.display = 'none';
     });
     
-    // Сбрасываем состояние кнопки зеленой твари
+    // Сбрасываем кнопку зеленой твари
     const greenButton = document.getElementById('green-button');
     if (greenButton) {
         greenButton.classList.remove('red');
@@ -1275,6 +1321,7 @@ function stopAllMonsters() {
     gameState.isHiding = false;
     gameState.currentCloset = null;
 }
+
 function returnToMenu() {
     stopAllMonsters();
     gameState.gameActive = false;
@@ -1330,345 +1377,8 @@ function showAchievements() {
         container.appendChild(item);
     });
 }
-// Функция для показа главного меню
-function showMainMenu() {
-    document.getElementById('main-menu').style.display = 'block';
-    document.getElementById('game-screen').style.display = 'none';
-    document.getElementById('index-screen').style.display = 'none';
-    document.getElementById('achievements-screen').style.display = 'none';
-    
-    document.body.style.background = '#0a0a0a';
-    document.body.style.opacity = '1';
-}
 
-// Функция для случайного спавна монстров в комнатах
-function spawnRandomMonster() {
-    if (gameState.monsterActive || !gameState.gameActive) return;
-    
-    const random = Math.random();
-    if (random < 0.05) {
-        // 5% шанс на красную тварь
-        spawnRedCreature();
-    } else if (random < 0.1) {
-        // 5% шанс на зеленую тварь
-        spawnGreenCreature();
-    } else if (random < 0.12 && gameState.monsters.eyePerformer.count < gameState.monsters.eyePerformer.maxCount) {
-        // 2% шанс на совершителя глаз
-        spawnEyePerformer();
-    }
-}
-
-// Функция для обновления прогресс-бара совершителя глаз
-function updateEyeProgress() {
-    const progressFill = document.getElementById('eye-progress');
-    if (progressFill) {
-        const progress = (gameState.monsters.eyePerformer.count / gameState.monsters.eyePerformer.maxCount) * 100;
-        progressFill.style.width = `${progress}%`;
-    }
-}
-
-// Функция для обработки специальных комнат
-function handleSpecialRooms(roomNumber) {
-    switch(roomNumber) {
-        case 66:
-            // Комната с увеличенным шансом монстров
-            showMessage('Эта комната кажется более опасной...', 'warning');
-            setTimeout(() => {
-                if (Math.random() < 0.3) {
-                    spawnRandomMonster();
-                }
-            }, 2000);
-            break;
-        case 77:
-            // Тайная комната
-            showMessage('Вы нашли секретную комнату!', 'success');
-            gameState.hasKey = true;
-            break;
-        case 88:
-            // Комната с несколькими ключами
-            showMessage('Здесь много ключей!', 'success');
-            // Добавляем дополнительные ключи в интерфейс
-            const roomContent = document.getElementById('room-content');
-            for (let i = 0; i < 3; i++) {
-                const keyX = Math.random() * 70 + 15;
-                const keyY = Math.random() * 60 + 20;
-                const key = document.createElement('button');
-                key.className = 'key';
-                key.style.cssText = `position: absolute; left: ${keyX}%; top: ${keyY}%; z-index: 10;`;
-                key.textContent = '🔑';
-                key.onclick = takeKey;
-                roomContent.appendChild(key);
-            }
-            break;
-        case 99:
-            // Предфинальная комната
-            showMessage('Приготовьтесь к финальной битве!', 'warning');
-            break;
-    }
-}
-
-// Функция для проверки достижений связанных с монстрами
-function checkMonsterAchievements() {
-    // Проверка на встречу со всеми монстрами
-    const allMonstersMet = Object.values(gameState.index).every(monster => monster.met);
-    if (allMonstersMet && !gameState.achievements.monsterExpert) {
-        gameState.achievements.monsterExpert = {
-            name: "Эксперт по монстрам",
-            description: "Встретить всех монстров",
-            unlocked: true
-        };
-        unlockAchievement('monsterExpert');
-    }
-    
-    // Проверка на выживание в длинной серии комнат
-    if (gameState.currentRoom >= 50 && !gameState.achievements.survivor) {
-        gameState.achievements.survivor = {
-            name: "Выживший",
-            description: "Дойти до комнаты 50",
-            unlocked: true
-        };
-        unlockAchievement('survivor');
-    }
-}
-
-// Функция для анимации перехода между комнатами
-function animateRoomTransition() {
-    const gameScreen = document.getElementById('game-screen');
-    gameScreen.style.opacity = '0';
-    
-    setTimeout(() => {
-        gameScreen.style.opacity = '1';
-    }, 500);
-}
-
-// Функция для управления звуками
-function playSound(soundId, loop = false) {
-    const sound = document.getElementById(soundId);
-    if (sound) {
-        sound.loop = loop;
-        sound.currentTime = 0;
-        sound.play().catch(e => console.log('Audio play failed:', e));
-    }
-}
-
-function stopSound(soundId) {
-    const sound = document.getElementById(soundId);
-    if (sound) {
-        sound.pause();
-        sound.currentTime = 0;
-    }
-}
-
-// Функция для сброса состояния монстров при перезапуске
-function resetMonsters() {
-    Object.keys(gameState.monsters).forEach(key => {
-        const monster = gameState.monsters[key];
-        monster.active = false;
-        
-        if (monster.timer) {
-            clearTimeout(monster.timer);
-            monster.timer = null;
-        }
-        
-        if (monster.flickerTimer) {
-            clearTimeout(monster.flickerTimer);
-            monster.flickerTimer = null;
-        }
-        
-        if (monster.attackTimer) {
-            clearTimeout(monster.attackTimer);
-            monster.attackTimer = null;
-        }
-        
-        // Сброс счетчиков
-        if (monster.count !== undefined) monster.count = 0;
-        if (monster.clicks !== undefined) monster.clicks = 0;
-        if (monster.doorsPassed !== undefined) monster.doorsPassed = 0;
-        if (monster.keysCollected !== undefined) monster.keysCollected = 0;
-        if (monster.booksOpened !== undefined) monster.booksOpened = 0;
-    });
-}
-
-// Функция для показа статистики игры
-function showGameStats() {
-    const stats = `
-        Пройдено комнат: ${gameState.currentRoom - 1}
-        Ловушек: ${gameState.stats.trapCount}
-        Тёмных комнат: ${gameState.stats.darkRoomCount}
-        Атак Поедателя: ${gameState.stats.seekAttacks}
-        Временных монстров: ${gameState.stats.temporalCount}
-    `;
-    
-    showMessage(stats, 'success');
-}
-
-// Функция для быстрого сохранения игры
-function quickSave() {
-    const saveData = {
-        currentRoom: gameState.currentRoom,
-        hasKey: gameState.hasKey,
-        achievements: gameState.achievements,
-        index: gameState.index,
-        stats: gameState.stats,
-        monsters: {
-            eyePerformer: { count: gameState.monsters.eyePerformer.count },
-            seek: { active: gameState.monsters.seek.active }
-        }
-    };
-    
-    localStorage.setItem('doorsOffQuickSave', JSON.stringify(saveData));
-    showMessage('Игра сохранена', 'success');
-}
-
-function quickLoad() {
-    const saved = localStorage.getItem('doorsOffQuickSave');
-    if (saved) {
-        const saveData = JSON.parse(saved);
-        
-        gameState.currentRoom = saveData.currentRoom;
-        gameState.hasKey = saveData.hasKey;
-        gameState.achievements = { ...gameState.achievements, ...saveData.achievements };
-        gameState.index = { ...gameState.index, ...saveData.index };
-        gameState.stats = { ...gameState.stats, ...saveData.stats };
-        gameState.monsters.eyePerformer.count = saveData.monsters.eyePerformer.count;
-        gameState.monsters.seek.active = saveData.monsters.seek.active;
-        
-        loadRoom(gameState.currentRoom);
-        showMessage('Игра загружена', 'success');
-    } else {
-        showMessage('Нет сохраненной игры', 'error');
-    }
-}
-
-// Функция для обработки клавиатурных shortcuts
-document.addEventListener('keydown', function(event) {
-    if (!gameState.gameActive) return;
-    
-    switch(event.key) {
-        case 's':
-        case 'S':
-            if (event.ctrlKey) {
-                event.preventDefault();
-                quickSave();
-            }
-            break;
-        case 'l':
-        case 'L':
-            if (event.ctrlKey) {
-                event.preventDefault();
-                quickLoad();
-            }
-            break;
-        case 'Escape':
-            returnToMenu();
-            break;
-        case 'i':
-        case 'I':
-            showIndex();
-            break;
-        case 'a':
-        case 'A':
-            showAchievements();
-            break;
-    }
-});
-
-// Функция для оптимизации производительности
-function optimizePerformance() {
-    // Очистка неиспользуемых элементов
-    const overlays = document.querySelectorAll('.monster-overlay, .bright-overlay');
-    overlays.forEach(overlay => {
-        if (overlay.style.display === 'none') {
-            overlay.innerHTML = '';
-        }
-    });
-}
-
-// Функция для проверки поддержки функций браузером
-function checkBrowserCompatibility() {
-    if (!('localStorage' in window)) {
-        showMessage('Ваш браузер не поддерживает сохранение игры', 'warning');
-    }
-    
-    if (!('Promise' in window)) {
-        showMessage('Рекомендуется использовать современный браузер', 'warning');
-    }
-}
-
-// Инициализация игры при загрузке
-function initializeGame() {
-    checkBrowserCompatibility();
-    loadGameProgress();
-    
-    // Предзагрузка критически важных ресурсов
-    const audioElements = document.querySelectorAll('audio');
-    audioElements.forEach(audio => {
-        audio.preload = 'metadata';
-    });
-    
-    console.log('DOORS-OFF инициализирована');
-}
-
-// Вызов инициализации при загрузке страницы
-window.addEventListener('load', initializeGame);
-
-// Обработчик для мобильных устройств
-function setupMobileSupport() {
-    // Увеличиваем размер кликабельных элементов для мобильных
-    if ('ontouchstart' in window) {
-        const touchElements = document.querySelectorAll('.door, .key, .btn, .stone, .closet');
-        touchElements.forEach(element => {
-            element.style.minHeight = '44px';
-            element.style.minWidth = '44px';
-        });
-    }
-}
-
-// Авто-сохранение каждые 2 минуты
-setInterval(() => {
-    if (gameState.gameActive) {
-        saveGameProgress();
-    }
-}, 120000);
-
-// Функция для отладки (только в development)
-function debugMode() {
-    console.log('Current Game State:', gameState);
-    
-    // Добавляем debug панель
-    const debugPanel = document.createElement('div');
-    debugPanel.style.cssText = `
-        position: fixed;
-        top: 10px;
-        left: 10px;
-        background: rgba(0,0,0,0.8);
-        color: white;
-        padding: 10px;
-        border-radius: 5px;
-        z-index: 10000;
-        font-size: 12px;
-    `;
-    
-    debugPanel.innerHTML = `
-        <div>Room: ${gameState.currentRoom}</div>
-        <div>Key: ${gameState.hasKey}</div>
-        <div>Monster Active: ${gameState.monsterActive}</div>
-        <button onclick="gameState.currentRoom++">Next Room</button>
-        <button onclick="gameState.hasKey = true">Get Key</button>
-    `;
-    
-    document.body.appendChild(debugPanel);
-}
-function forceCloseAllMonsters() {
-    stopAllMonsters();
-    
-    // Дополнительная очистка интервалов
-    const highestIntervalId = setInterval(() => {});
-    for (let i = 0; i < highestIntervalId; i++) {
-        clearInterval(i);
-    }
-}
-// Экспорт функций для глобального использования
+// Глобальные функции
 window.takeKey = takeKey;
 window.openDoor = openDoor;
 window.moveStone = moveStone;
@@ -1685,4 +1395,3 @@ window.passEscapeDoor = passEscapeDoor;
 window.startGuard50 = startGuard50;
 window.startGuard100 = startGuard100;
 window.openBook = openBook;
-window.debugMode = debugMode;
