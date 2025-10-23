@@ -117,6 +117,51 @@ body {
     font-weight: bold;
 }
 
+/* Достижения */
+#achievements-screen {
+    display: none;
+}
+
+.achievements-container {
+    background: #1a1a1a;
+    padding: 30px;
+    border-radius: 10px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.achievement-item {
+    background: #2c3e50;
+    margin: 15px 0;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #f39c12;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.achievement-item.unlocked {
+    border-left-color: #27ae60;
+}
+
+.achievement-icon {
+    font-size: 2rem;
+    width: 50px;
+    text-align: center;
+}
+
+.achievement-info h3 {
+    color: #3498db;
+    margin-bottom: 5px;
+    font-size: 1.2rem;
+}
+
+.achievement-info p {
+    color: #bdc3c7;
+    font-size: 0.9rem;
+}
+
 /* Комнаты и двери */
 .room-content {
     padding: 40px;
@@ -127,6 +172,7 @@ body {
     align-items: center;
     justify-content: center;
     gap: 30px;
+    position: relative;
 }
 
 /* Ключ */
@@ -141,6 +187,7 @@ body {
     border: none;
     font-size: 1.1rem;
     position: absolute;
+    z-index: 10;
 }
 
 .key:hover {
@@ -211,6 +258,14 @@ body {
     align-items: center;
 }
 
+.very-long-room {
+    min-height: 2000px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .two-doors {
     display: flex;
     justify-content: center;
@@ -231,6 +286,7 @@ body {
     font-size: 0.9rem;
 }
 
+/* Камень */
 .stone {
     background: #795548;
     width: 80px;
@@ -252,6 +308,7 @@ body {
     background: #6d4c41;
 }
 
+/* Туалет */
 .toilet {
     background: #2c3e50;
     width: 60px;
@@ -269,6 +326,60 @@ body {
     height: 40px;
     background: #34495e;
     border-radius: 50%;
+}
+
+.movable-toilet {
+    background: #2c3e50;
+    width: 80px;
+    height: 100px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 5px;
+}
+
+.movable-toilet::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 50px;
+    background: #34495e;
+    border-radius: 50%;
+}
+
+.movable-toilet.moved {
+    transform: translateX(100px);
+}
+
+/* Шкафы */
+.closet {
+    background: #5D4037;
+    width: 80px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 2px solid #3E2723;
+    border-radius: 5px;
+    font-weight: bold;
+    color: white;
+    transition: all 0.2s ease;
+    position: absolute;
+    z-index: 5;
+}
+
+.closet:hover {
+    background: #6D4C41;
+    transform: scale(1.05);
+}
+
+.closet.open {
+    background: #8B4513;
+    border-color: #654321;
 }
 
 /* Комнатная структура */
@@ -430,6 +541,133 @@ body {
     border-radius: 5px;
 }
 
+/* ВВЕРХ монстр */
+.escape-doors {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.escape-door {
+    background: #8B4513;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 5px;
+    font-weight: bold;
+    color: white;
+    transition: all 0.2s ease;
+}
+
+.escape-door:hover {
+    background: #A0522D;
+    transform: scale(1.05);
+}
+
+.doors-counter {
+    font-size: 1.5rem;
+    color: #3498db;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+/* СТРАЖ 050 */
+.code-display {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #f39c12;
+    margin: 20px 0;
+    padding: 15px;
+    background: #34495e;
+    border-radius: 5px;
+    letter-spacing: 5px;
+}
+
+.books-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.book {
+    background: #8e44ad;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 5px;
+    font-weight: bold;
+    color: white;
+    transition: all 0.2s ease;
+    font-size: 1.2rem;
+}
+
+.book:hover {
+    background: #9b59b6;
+    transform: scale(1.05);
+}
+
+.book.green {
+    background: #27ae60;
+}
+
+.book.red {
+    background: #e74c3c;
+    cursor: not-allowed;
+}
+
+/* СТРАЖ 100 */
+.keys-counter {
+    font-size: 2rem;
+    color: #f39c12;
+    font-weight: bold;
+    margin: 15px 0;
+}
+
+.game-area {
+    position: relative;
+    width: 600px;
+    height: 400px;
+    background: #1a1a1a;
+    border: 2px solid #34495e;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px auto;
+}
+
+.key-item {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background: #f39c12;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #000;
+    transition: all 0.2s ease;
+}
+
+.key-item:hover {
+    transform: scale(1.2);
+}
+
+.danger-square {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: #e74c3c;
+    cursor: not-allowed;
+    transition: all 0.3s ease;
+}
+
 /* Временной монстр */
 .temporal-warning {
     position: fixed;
@@ -450,6 +688,35 @@ body {
     text-align: center;
     font-weight: bold;
     text-shadow: 0 0 20px rgba(0,0,0,0.8);
+}
+
+/* Поедатель */
+.seek-warning {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    color: #e74c3c;
+    font-size: 3rem;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* Эффект мигания света */
+.light-flicker {
+    animation: flicker 0.1s infinite;
+}
+
+@keyframes flicker {
+    0% { background: #0a0a0a; }
+    50% { background: #2a2a2a; }
+    100% { background: #0a0a0a; }
 }
 
 /* Сообщения */
@@ -514,6 +781,10 @@ body {
         min-height: 800px;
     }
     
+    .very-long-room {
+        min-height: 1200px;
+    }
+    
     .monster-container {
         min-width: 300px;
         padding: 20px;
@@ -522,5 +793,14 @@ body {
     .bright-ball {
         width: 150px;
         height: 150px;
+    }
+    
+    .game-area {
+        width: 90%;
+        height: 300px;
+    }
+    
+    .books-container {
+        grid-template-columns: repeat(3, 1fr);
     }
 }
