@@ -650,6 +650,7 @@ function failTrap() {
 }
 
 // ВРЕМЕННОЙ МОНСТР
+// ВРЕМЕННОЙ МОНСТР - С ВОЗМОЖНОСТЬЮ ЗАКРЫТЬ КЛИКОМ
 function spawnTemporal() {
     if (gameState.monsterActive) return;
     
@@ -668,22 +669,38 @@ function spawnTemporal() {
     }
     gameState.stats.lastTemporalRoom = gameState.currentRoom;
     
-    document.getElementById('temporal-warning').style.display = 'flex';
+    const temporalOverlay = document.getElementById('temporal-warning');
+    temporalOverlay.style.display = 'flex';
+    
+    // Добавляем обработчик клика для закрытия оверлея
+    const closeOverlay = function() {
+        clearInterval(timer);
+        temporalOverlay.style.display = 'none';
+        monster.active = false;
+        gameState.monsterActive = false;
+        temporalOverlay.removeEventListener('click', closeOverlay);
+        showMessage('Временной монстр избегнут!', 'success');
+    };
+    
+    temporalOverlay.addEventListener('click', closeOverlay);
     
     let timeLeft = 5;
     const timer = setInterval(() => {
         timeLeft--;
         if (timeLeft <= 0) {
             clearInterval(timer);
-            document.getElementById('temporal-warning').style.display = 'none';
+            temporalOverlay.style.display = 'none';
+            temporalOverlay.removeEventListener('click', closeOverlay);
             gameOver('Временной монстр поймал вас!');
         }
     }, 1000);
     
+    // Автоматическое закрытие через 5 секунд
     setTimeout(() => {
         if (monster.active) {
             clearInterval(timer);
-            document.getElementById('temporal-warning').style.display = 'none';
+            temporalOverlay.style.display = 'none';
+            temporalOverlay.removeEventListener('click', closeOverlay);
             monster.active = false;
             gameState.monsterActive = false;
         }
