@@ -1,6 +1,6 @@
 // Глобальное состояние игры
 const gameState = {
-    currentRoom: 49,
+    currentRoom: 1,
     hasKey: false,
     temporalActive: false,
     temporalTimer: null,
@@ -360,7 +360,6 @@ function unlockAchievement(key) {
 }
 
 function showMessage(text, type) {
-    // Удаляем старые сообщения
     const oldMessages = document.querySelectorAll('.message');
     oldMessages.forEach(msg => msg.remove());
     
@@ -394,7 +393,6 @@ function startGame() {
         seekAttacks: 0
     };
     
-    // Очищаем все таймеры
     Object.values(gameState.monsters).forEach(monster => {
         monster.active = false;
         if (monster.timer) {
@@ -461,24 +459,20 @@ function loadRoom(roomNumber) {
         document.body.style.opacity = '1';
         document.body.classList.remove('light-flicker');
         
-        // Выходим из шкафа при смене комнаты
         if (gameState.isHiding && gameState.currentCloset) {
             gameState.currentCloset.classList.remove('hiding');
             gameState.isHiding = false;
             gameState.currentCloset = null;
         }
         
-        // Специальные комнаты
         if (roomNumber === 30 && !gameState.monsters.figure.active) {
             setTimeout(() => spawnFigure(), 1000);
         }
         
-        // Проверка на появление тьмы
         if (Math.random() < gameState.monsters.darkness.chance) {
             activateDarkness();
         }
         
-        // Проверка на Поедателя
         if (room.hasClosets && gameState.seekCooldown === 0) {
             setTimeout(() => spawnSeek(), 2000);
         }
@@ -655,7 +649,7 @@ function failTrap() {
     }
 }
 
-// МОНСТРЫ - ИСПРАВЛЕННЫЕ ВЕРСИИ
+// ВРЕМЕННОЙ МОНСТР
 function spawnTemporal() {
     if (gameState.monsterActive) return;
     
@@ -674,34 +668,29 @@ function spawnTemporal() {
     }
     gameState.stats.lastTemporalRoom = gameState.currentRoom;
     
-    const temporalOverlay = document.getElementById('temporal-warning');
-    temporalOverlay.style.display = 'flex';
+    document.getElementById('temporal-warning').style.display = 'flex';
     
     let timeLeft = 5;
-    const timerElement = document.createElement('div');
-    timerElement.style.cssText = 'font-size: 3rem; color: white; text-align: center; margin-top: 20px;';
-    timerElement.textContent = timeLeft;
-    temporalOverlay.appendChild(timerElement);
-    
     const timer = setInterval(() => {
         timeLeft--;
-        timerElement.textContent = timeLeft;
-        
         if (timeLeft <= 0) {
             clearInterval(timer);
-            temporalOverlay.style.display = 'none';
-            temporalOverlay.removeChild(timerElement);
+            document.getElementById('temporal-warning').style.display = 'none';
             gameOver('Временной монстр поймал вас!');
         }
     }, 1000);
     
-    // Сохраняем таймер для очистки
-    monster.timer = timer;
-    
-    // Временной монстр не блокирует игру - можно продолжать играть
-    showMessage('Временной монстр появился! Уходите в другую комнату за 5 секунд!', 'warning');
+    setTimeout(() => {
+        if (monster.active) {
+            clearInterval(timer);
+            document.getElementById('temporal-warning').style.display = 'none';
+            monster.active = false;
+            gameState.monsterActive = false;
+        }
+    }, 5000);
 }
 
+// КРАСНАЯ ТВАРЬ
 function spawnRedCreature() {
     if (gameState.monsterActive) return;
     
@@ -710,8 +699,7 @@ function spawnRedCreature() {
     gameState.monsterActive = true;
     gameState.index.redCreature.met = true;
     
-    const overlay = document.getElementById('red-creature-overlay');
-    overlay.style.display = 'flex';
+    document.getElementById('red-creature-overlay').style.display = 'flex';
     
     let timeLeft = 1.5;
     const timerElement = document.getElementById('red-timer');
@@ -728,7 +716,7 @@ function spawnRedCreature() {
         
         if (timeLeft <= 0) {
             clearInterval(timer);
-            overlay.style.display = 'none';
+            document.getElementById('red-creature-overlay').style.display = 'none';
             gameOver('Красная тварь поймала вас!');
         }
     }, 100);
@@ -748,6 +736,7 @@ function defeatRedCreature() {
     showMessage('Красная тварь отбита!', 'success');
 }
 
+// ЗЕЛЕНАЯ ТВАРЬ
 function spawnGreenCreature() {
     if (gameState.monsterActive) return;
     
@@ -756,8 +745,7 @@ function spawnGreenCreature() {
     gameState.monsterActive = true;
     gameState.index.greenCreature.met = true;
     
-    const overlay = document.getElementById('green-creature-overlay');
-    overlay.style.display = 'flex';
+    document.getElementById('green-creature-overlay').style.display = 'flex';
     
     const greenButton = document.getElementById('green-button');
     greenButton.classList.remove('green');
@@ -780,12 +768,10 @@ function spawnGreenCreature() {
         
         if (timeLeft <= 0) {
             clearInterval(timer);
-            // УСПЕХ - игрок не нажал кнопку
             monster.active = false;
             gameState.monsterActive = false;
-            overlay.style.display = 'none';
+            document.getElementById('green-creature-overlay').style.display = 'none';
             
-            // Восстанавливаем кнопку
             greenButton.classList.remove('red');
             greenButton.classList.add('green');
             greenButton.style.cursor = 'not-allowed';
@@ -809,7 +795,6 @@ function failGreenCreature() {
     gameState.monsterActive = false;
     document.getElementById('green-creature-overlay').style.display = 'none';
     
-    // Восстанавливаем кнопку
     const greenButton = document.getElementById('green-button');
     greenButton.classList.remove('red');
     greenButton.classList.add('green');
@@ -819,6 +804,7 @@ function failGreenCreature() {
     gameOver('Вы нажали кнопку! Зеленая тварь поймала вас!');
 }
 
+// СОВЕРШИТЕЛЬ ГЛАЗ
 function spawnEyePerformer() {
     if (gameState.monsterActive) return;
     
@@ -830,58 +816,101 @@ function spawnEyePerformer() {
     
     document.getElementById('eye-performer-overlay').style.display = 'flex';
     
-    const requirements = ['Нажми меня!', 'Не нажимай!', 'Быстро нажми!', 'Жди...'];
-    const currentReq = requirements[Math.floor(Math.random() * requirements.length)];
+    // Фаза подготовки
     const requirementElement = document.getElementById('eye-requirement');
-    
-    requirementElement.textContent = currentReq;
-    requirementElement.style.background = '#34495e';
-    requirementElement.style.cursor = 'pointer';
-    
-    let timeLeft = 2.0;
     const timerElement = document.getElementById('eye-timer');
-    timerElement.textContent = timeLeft.toFixed(1);
+    const progressFill = document.getElementById('eye-progress');
     
-    const timer = setInterval(() => {
-        if (!monster.active) {
-            clearInterval(timer);
-            return;
-        }
+    requirementElement.textContent = 'ПОДГОТОВКА...';
+    requirementElement.style.background = '#34495e';
+    requirementElement.style.cursor = 'default';
+    requirementElement.onclick = null;
+    
+    let prepTime = 2.0;
+    timerElement.textContent = prepTime.toFixed(1);
+    
+    const prepTimer = setInterval(() => {
+        prepTime -= 0.1;
+        timerElement.textContent = prepTime.toFixed(1);
         
-        timeLeft -= 0.1;
-        timerElement.textContent = timeLeft.toFixed(1);
-        
-        if (currentReq === 'Быстро нажми!' && timeLeft < 1.0) {
-            requirementElement.style.background = '#e74c3c';
-        }
-        
-        if (timeLeft <= 0) {
-            clearInterval(timer);
-            if (currentReq === 'Жди...') {
-                // Успех - игрок не нажал
-                monster.active = false;
-                gameState.monsterActive = false;
-                document.getElementById('eye-performer-overlay').style.display = 'none';
-                showMessage('Совершитель глаз побежден!', 'success');
-                if (monster.count >= 2) {
-                    unlockAchievement('controller');
-                }
-            } else if (currentReq === 'Быстро нажми!') {
-                // Провал - не успел нажать
-                gameOver('Вы не успели нажать!');
-            } else if (currentReq === 'Нажми меня!') {
-                // Провал - не нажал когда нужно
-                gameOver('Вы не нажали кнопку!');
-            }
+        if (prepTime <= 0) {
+            clearInterval(prepTimer);
+            startEyePerformerGame();
         }
     }, 100);
     
-    // Обработчик для кнопки требования
-    requirementElement.onclick = function() {
-        clearInterval(timer);
+    function startEyePerformerGame() {
+        const commands = [
+            { 
+                text: 'Нажми меня!', 
+                action: 'click', 
+                time: 2.0,
+                correctAction: 'click'
+            },
+            { 
+                text: 'Не нажимай!', 
+                action: 'no-click', 
+                time: 2.0,
+                correctAction: 'wait'
+            },
+            { 
+                text: 'Быстро нажми!', 
+                action: 'fast-click', 
+                time: 1.0,
+                correctAction: 'click'
+            },
+            { 
+                text: 'Жди...', 
+                action: 'wait', 
+                time: 2.0,
+                correctAction: 'wait'
+            }
+        ];
         
-        if (currentReq === 'Нажми меня!' || currentReq === 'Быстро нажми!') {
-            // Успех
+        const command = commands[Math.floor(Math.random() * commands.length)];
+        requirementElement.textContent = command.text;
+        requirementElement.style.background = '#34495e';
+        requirementElement.style.cursor = command.correctAction === 'click' ? 'pointer' : 'default';
+        
+        let timeLeft = command.time;
+        timerElement.textContent = timeLeft.toFixed(1);
+        
+        let clicked = false;
+        
+        requirementElement.onclick = function() {
+            if (command.correctAction === 'click') {
+                clicked = true;
+                winEyePerformer();
+            } else if (command.correctAction === 'wait') {
+                loseEyePerformer();
+            }
+        };
+        
+        const timer = setInterval(() => {
+            if (!monster.active) {
+                clearInterval(timer);
+                return;
+            }
+            
+            timeLeft -= 0.1;
+            timerElement.textContent = timeLeft.toFixed(1);
+            
+            if (command.action === 'fast-click' && timeLeft < 1.0) {
+                requirementElement.style.background = '#e74c3c';
+            }
+            
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                if (command.correctAction === 'wait') {
+                    winEyePerformer();
+                } else if (command.correctAction === 'click' && !clicked) {
+                    loseEyePerformer();
+                }
+            }
+        }, 100);
+        
+        function winEyePerformer() {
+            clearInterval(timer);
             monster.active = false;
             gameState.monsterActive = false;
             document.getElementById('eye-performer-overlay').style.display = 'none';
@@ -889,14 +918,16 @@ function spawnEyePerformer() {
             if (monster.count >= 2) {
                 unlockAchievement('controller');
             }
-        } else if (currentReq === 'Не нажимай!') {
-            // Провал
-            gameOver('Вы нажали когда нельзя было!');
         }
-        // Для 'Жди...' ничего не делаем - ждем таймер
-    };
+        
+        function loseEyePerformer() {
+            clearInterval(timer);
+            gameOver('Совершитель глаз поймал вас!');
+        }
+    }
 }
 
+// ЯРКИЙ
 function spawnBright() {
     if (gameState.monsterActive) return;
     
@@ -1009,7 +1040,7 @@ function passEscapeDoor(doorNumber) {
     }
 }
 
-// СТРАЖ 050 - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// СТРАЖ 050
 function startGuard50() {
     if (gameState.monsterActive || gameState.isHiding) return;
     
@@ -1075,6 +1106,7 @@ function generateBooks() {
                     codeDisplay.textContent = currentCode.join('');
                 }
                 
+                // МИНИ-ИГРА ПРИ ОТКРЫТИИ КНИГИ
                 if (Math.random() < 0.3 && !monster.minigameActive) {
                     startGuardMinigame();
                 }
@@ -1092,6 +1124,7 @@ function generateBooks() {
     }
 }
 
+// МИНИ-ИГРА СТРАЖА
 function startGuardMinigame() {
     const monster = gameState.monsters.guard50;
     monster.minigameActive = true;
@@ -1128,14 +1161,12 @@ function generateMinigameBooks() {
     container.innerHTML = '';
     
     const totalBooks = 12;
-    const greenBooksCount = Math.floor(totalBooks * 0.4); // 40% зеленых книг
+    const greenBooksCount = Math.floor(totalBooks * 0.4);
     
-    // Создаем массив с зелеными и красными книгами
     const books = [];
     for (let i = 0; i < greenBooksCount; i++) books.push('green');
     for (let i = 0; i < totalBooks - greenBooksCount; i++) books.push('red');
     
-    // Перемешиваем
     books.sort(() => Math.random() - 0.5);
     
     books.forEach((type, index) => {
@@ -1174,7 +1205,7 @@ function completeGuard50() {
     proceedToRoom(51);
 }
 
-// СТРАЖ 100 - ИСПРАВЛЕННАЯ ВЕРСИЯ
+// СТРАЖ 100
 function startGuard100() {
     if (gameState.monsterActive || gameState.isHiding) return;
     
@@ -1203,7 +1234,6 @@ function generateGuard100Game() {
     container.innerHTML = '';
     const monster = gameState.monsters.guard100;
     
-    // Генерация ключей
     for (let i = 0; i < 20; i++) {
         const key = document.createElement('div');
         key.className = 'key-item';
@@ -1222,7 +1252,6 @@ function generateGuard100Game() {
         container.appendChild(key);
     }
     
-    // Генерация опасных квадратов
     for (let i = 0; i < 8; i++) {
         const square = document.createElement('div');
         square.className = 'danger-square';
@@ -1308,7 +1337,6 @@ function stopAllMonsters() {
         overlay.style.display = 'none';
     });
     
-    // Сбрасываем кнопку зеленой твари
     const greenButton = document.getElementById('green-button');
     if (greenButton) {
         greenButton.classList.remove('red');
