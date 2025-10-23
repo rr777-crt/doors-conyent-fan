@@ -655,10 +655,23 @@ function spawnTemporal() {
         timeLeft--;
         if (timeLeft <= 0) {
             clearInterval(timer);
+            // Убираем оверлей перед завершением игры
+            document.getElementById('temporal-warning').style.display = 'none';
             gameOver('Временной монстр поймал вас!');
         }
     }, 1000);
     
+    // Добавляем возможность закрыть временного монстра кликом
+    const temporalOverlay = document.getElementById('temporal-warning');
+    temporalOverlay.onclick = function() {
+        clearInterval(timer);
+        document.getElementById('temporal-warning').style.display = 'none';
+        monster.active = false;
+        gameState.monsterActive = false;
+        showMessage('Временной монстр избегнут!', 'success');
+    };
+    
+    // Автоматическое закрытие через 5 секунд если игрок выжил
     setTimeout(() => {
         if (monster.active) {
             clearInterval(timer);
@@ -734,7 +747,84 @@ function spawnGreenCreature() {
     }, 100);
 }
 
+function spawnGreenCreature() {
+    if (gameState.monsterActive) return;
+    
+    const monster = gameState.monsters.greenCreature;
+    monster.active = true;
+    gameState.monsterActive = true;
+    gameState.index.greenCreature.met = true;
+    
+    document.getElementById('green-creature-overlay').style.display = 'flex';
+    
+    const greenButton = document.getElementById('green-button');
+    greenButton.classList.remove('green');
+    greenButton.classList.add('red');
+    greenButton.style.cursor = 'pointer';
+    
+    // Сохраняем оригинальный обработчик чтобы можно было его убрать
+    greenButton._originalOnclick = greenButton.onclick;
+    greenButton.onclick = failGreenCreature;
+    
+    let timeLeft = 1.5;
+    const timer = setInterval(() => {
+        if (!monster.active) {
+            clearInterval(timer);
+            return;
+        }
+        
+        timeLeft -= 0.1;
+        document.getElementById('green-timer').textContent = timeLeft.toFixed(1);
+        
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            // УСПЕХ - игрок не нажал кнопку
+            monster.active = false;
+            gameState.monsterActive = false;
+            document.getElementById('green-creature-overlay').style.display = 'none';
+            
+            // Восстанавливаем кнопку в исходное состояние
+            greenButton.classList.remove('red');
+            greenButton.classList.add('green');
+            greenButton.style.cursor = 'not-allowed';
+            greenButton.onclick = null;
+            
+            unlockAchievement('dontBeatGreen');
+            showMessage('Зеленая тварь побеждена!', 'success');
+        }
+    }, 100);
+    
+    // Защита на случай если таймер не сработает
+    setTimeout(() => {
+        if (monster.active) {
+            clearInterval(timer);
+            monster.active = false;
+            gameState.monsterActive = false;
+            document.getElementById('green-creature-overlay').style.display = 'none';
+            greenButton.classList.remove('red');
+            greenButton.classList.add('green');
+            greenButton.style.cursor = 'not-allowed';
+            greenButton.onclick = null;
+        }
+    }, 2000);
+}
+
+// Исправленная функция провала зеленой твари
 function failGreenCreature() {
+    const monster = gameState.monsters.greenCreature;
+    const greenButton = document.getElementById('green-button');
+    
+    // Немедленно очищаем все
+    monster.active = false;
+    gameState.monsterActive = false;
+    document.getElementById('green-creature-overlay').style.display = 'none';
+    
+    // Восстанавливаем кнопку
+    greenButton.classList.remove('red');
+    greenButton.classList.add('green');
+    greenButton.style.cursor = 'not-allowed';
+    greenButton.onclick = null;
+    
     gameOver('Вы нажали кнопку! Зеленая тварь поймала вас!');
 }
 
@@ -1141,30 +1231,50 @@ function stopAllMonsters() {
     Object.values(gameState.monsters).forEach(monster => {
         if (monster.active) {
             monster.active = false;
-            if (monster.timer) clearTimeout(monster.timer);
-            if (monster.flickerTimer) clearTimeout(monster.flickerTimer);
-            if (monster.attackTimer) clearTimeout(monster.attackTimer);
+            if (monster.timer) {
+                clearTimeout(monster.timer);
+                monster.timer = null;
+            }
+            if (monster.flickerTimer) {
+                clearTimeout(monster.flickerTimer);
+                monster.flickerTimer = null;
+            }
+            if (monster.attackTimer) {
+                clearTimeout(monster.attackTimer);
+                monster.attackTimer = null;
+            }
         }
     });
     
+    // Останавливаем всю музыку
     const audios = document.querySelectorAll('audio');
     audios.forEach(audio => {
         audio.pause();
         audio.currentTime = 0;
     });
     
+    // Убираем все визуальные эффекты
     document.body.classList.remove('light-flicker');
     
+    // Скрываем все оверлеи монстров
     const overlays = document.querySelectorAll('.monster-overlay, .bright-overlay, .temporal-warning, .seek-warning');
     overlays.forEach(overlay => {
         overlay.style.display = 'none';
     });
     
+    // Сбрасываем состояние кнопки зеленой твари
+    const greenButton = document.getElementById('green-button');
+    if (greenButton) {
+        greenButton.classList.remove('red');
+        greenButton.classList.add('green');
+        greenButton.style.cursor = 'not-allowed';
+        greenButton.onclick = null;
+    }
+    
     gameState.monsterActive = false;
     gameState.isHiding = false;
     gameState.currentCloset = null;
 }
-
 function returnToMenu() {
     stopAllMonsters();
     gameState.gameActive = false;
@@ -1549,7 +1659,15 @@ function debugMode() {
     
     document.body.appendChild(debugPanel);
 }
-
+function forceCloseAllMonsters() {
+    stopAllMonsters();
+    
+    // Дополнительная очистка интервалов
+    const highestIntervalId = setInterval(() => {});
+    for (let i = 0; i < highestIntervalId; i++) {
+        clearInterval(i);
+    }
+}
 // Экспорт функций для глобального использования
 window.takeKey = takeKey;
 window.openDoor = openDoor;
