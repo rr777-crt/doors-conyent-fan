@@ -1,6 +1,6 @@
 // Глобальное состояние игры
 const gameState = {
-    currentRoom: 1,
+    currentRoom: 49,
     hasKey: false,
     temporalActive: false,
     temporalTimer: null,
