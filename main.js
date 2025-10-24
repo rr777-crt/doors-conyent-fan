@@ -51,8 +51,8 @@ const gameState = {
         bright: { chance: 0.10, active: false, clicks: 0, needed: 20 },
         darkness: { chance: 0.35, active: false },
         figure: { active: false, timer: null, doorsPassed: 0, totalDoors: 15, timeLeft: 30 },
-        guard50: { active: false, code: "", booksOpened: 0, minigameActive: false },
-        guard100: { active: false, keysCollected: 0, keysNeeded: 20, squares: [] },
+        guard50: { active: false, code: "", booksOpened: 0, minigameActive: false, attackTimer: null },
+        guard100: { active: false, keysCollected: 0, keysNeeded: 20, squares: [], minigameActive: false, shapeRounds: 0, shapeTimer: null },
         seek: { active: false, attackTimer: null, flickerTimer: null }
     }
 };
@@ -425,7 +425,6 @@ function startGame() {
 }
 
 function startMonsterTimers() {
-    // Красная тварь
     if (gameState.monsters.redCreature.timer) {
         clearInterval(gameState.monsters.redCreature.timer);
     }
@@ -435,7 +434,6 @@ function startMonsterTimers() {
         }
     }, 10000 + Math.random() * 5000);
 
-    // Зеленая тварь
     if (gameState.monsters.greenCreature.timer) {
         clearInterval(gameState.monsters.greenCreature.timer);
     }
@@ -650,7 +648,6 @@ function failTrap() {
 }
 
 // ВРЕМЕННОЙ МОНСТР
-// ВРЕМЕННОЙ МОНСТР - С ВОЗМОЖНОСТЬЮ ЗАКРЫТЬ КЛИКОМ
 function spawnTemporal() {
     if (gameState.monsterActive) return;
     
@@ -672,7 +669,6 @@ function spawnTemporal() {
     const temporalOverlay = document.getElementById('temporal-warning');
     temporalOverlay.style.display = 'flex';
     
-    // Добавляем обработчик клика для закрытия оверлея
     const closeOverlay = function() {
         clearInterval(timer);
         temporalOverlay.style.display = 'none';
@@ -695,7 +691,6 @@ function spawnTemporal() {
         }
     }, 1000);
     
-    // Автоматическое закрытие через 5 секунд
     setTimeout(() => {
         if (monster.active) {
             clearInterval(timer);
@@ -833,114 +828,107 @@ function spawnEyePerformer() {
     
     document.getElementById('eye-performer-overlay').style.display = 'flex';
     
-    // Фаза подготовки
+    let progress = 50;
+    const progressFill = document.getElementById('eye-progress');
     const requirementElement = document.getElementById('eye-requirement');
     const timerElement = document.getElementById('eye-timer');
-    const progressFill = document.getElementById('eye-progress');
     
-    requirementElement.textContent = 'ПОДГОТОВКА...';
+    updateProgress();
+    
+    const commands = [
+        { text: 'Нажми!', type: 'click' },
+        { text: 'Не нажимай!', type: 'no-click' },
+        { text: 'Жди...', type: 'wait' },
+        { text: 'Быстро нажми!', type: 'fast-click' }
+    ];
+    
+    let currentCommand = getRandomCommand();
+    requirementElement.textContent = currentCommand.text;
     requirementElement.style.background = '#34495e';
-    requirementElement.style.cursor = 'default';
-    requirementElement.onclick = null;
+    requirementElement.style.cursor = 'pointer';
     
-    let prepTime = 2.0;
-    timerElement.textContent = prepTime.toFixed(1);
-    
-    const prepTimer = setInterval(() => {
-        prepTime -= 0.1;
-        timerElement.textContent = prepTime.toFixed(1);
-        
-        if (prepTime <= 0) {
-            clearInterval(prepTimer);
-            startEyePerformerGame();
+    requirementElement.onclick = function() {
+        if (currentCommand.type === 'click' || currentCommand.type === 'fast-click') {
+            progress = Math.min(100, progress + 5);
+            showMessage('+5%', 'success');
+        } else {
+            progress = Math.max(0, progress - 10);
+            showMessage('-10%', 'error');
         }
-    }, 100);
+        updateProgress();
+        
+        if (progress >= 100) {
+            winEyePerformer();
+        } else if (progress <= 0) {
+            loseEyePerformer();
+        }
+    };
     
-    function startEyePerformerGame() {
-        const commands = [
-            { 
-                text: 'Нажми меня!', 
-                action: 'click', 
-                time: 2.0,
-                correctAction: 'click'
-            },
-            { 
-                text: 'Не нажимай!', 
-                action: 'no-click', 
-                time: 2.0,
-                correctAction: 'wait'
-            },
-            { 
-                text: 'Быстро нажми!', 
-                action: 'fast-click', 
-                time: 1.0,
-                correctAction: 'click'
-            },
-            { 
-                text: 'Жди...', 
-                action: 'wait', 
-                time: 2.0,
-                correctAction: 'wait'
-            }
-        ];
+    const progressTimer = setInterval(() => {
+        if (!monster.active) {
+            clearInterval(progressTimer);
+            clearInterval(commandTimer);
+            return;
+        }
         
-        const command = commands[Math.floor(Math.random() * commands.length)];
-        requirementElement.textContent = command.text;
-        requirementElement.style.background = '#34495e';
-        requirementElement.style.cursor = command.correctAction === 'click' ? 'pointer' : 'default';
+        progress = Math.max(0, progress - 10);
+        updateProgress();
         
-        let timeLeft = command.time;
-        timerElement.textContent = timeLeft.toFixed(1);
+        if (progress <= 0) {
+            clearInterval(progressTimer);
+            clearInterval(commandTimer);
+            loseEyePerformer();
+        }
+    }, 1000);
+    
+    const commandTimer = setInterval(() => {
+        if (!monster.active) {
+            clearInterval(commandTimer);
+            return;
+        }
         
-        let clicked = false;
-        
-        requirementElement.onclick = function() {
-            if (command.correctAction === 'click') {
-                clicked = true;
-                winEyePerformer();
-            } else if (command.correctAction === 'wait') {
-                loseEyePerformer();
-            }
-        };
-        
-        const timer = setInterval(() => {
-            if (!monster.active) {
-                clearInterval(timer);
-                return;
-            }
+        if (Math.random() < 0.5) {
+            currentCommand = getRandomCommand();
+            requirementElement.textContent = currentCommand.text;
             
-            timeLeft -= 0.1;
-            timerElement.textContent = timeLeft.toFixed(1);
-            
-            if (command.action === 'fast-click' && timeLeft < 1.0) {
+            if (currentCommand.type === 'fast-click') {
                 requirementElement.style.background = '#e74c3c';
-            }
-            
-            if (timeLeft <= 0) {
-                clearInterval(timer);
-                if (command.correctAction === 'wait') {
-                    winEyePerformer();
-                } else if (command.correctAction === 'click' && !clicked) {
-                    loseEyePerformer();
-                }
-            }
-        }, 100);
-        
-        function winEyePerformer() {
-            clearInterval(timer);
-            monster.active = false;
-            gameState.monsterActive = false;
-            document.getElementById('eye-performer-overlay').style.display = 'none';
-            showMessage('Совершитель глаз побежден!', 'success');
-            if (monster.count >= 2) {
-                unlockAchievement('controller');
+                setTimeout(() => {
+                    if (monster.active) {
+                        requirementElement.style.background = '#34495e';
+                    }
+                }, 500);
+            } else {
+                requirementElement.style.background = '#34495e';
             }
         }
-        
-        function loseEyePerformer() {
-            clearInterval(timer);
-            gameOver('Совершитель глаз поймал вас!');
+    }, 1000);
+    
+    function getRandomCommand() {
+        return commands[Math.floor(Math.random() * commands.length)];
+    }
+    
+    function updateProgress() {
+        progressFill.style.width = `${progress}%`;
+        timerElement.textContent = `${progress}%`;
+    }
+    
+    function winEyePerformer() {
+        clearInterval(progressTimer);
+        clearInterval(commandTimer);
+        monster.active = false;
+        gameState.monsterActive = false;
+        document.getElementById('eye-performer-overlay').style.display = 'none';
+        showMessage('Совершитель глаз побежден!', 'success');
+        if (monster.count >= 2) {
+            unlockAchievement('controller');
         }
+    }
+    
+    function loseEyePerformer() {
+        clearInterval(progressTimer);
+        clearInterval(commandTimer);
+        gameOver('Совершитель глаз поймал вас!');
     }
 }
 
@@ -1005,6 +993,13 @@ function spawnFigure() {
         
         monster.timeLeft -= 0.1;
         document.getElementById('figure-timer').textContent = monster.timeLeft.toFixed(1);
+        
+        if (figureMusic && monster.timeLeft < 15) {
+            figureMusic.playbackRate = 1.2;
+        }
+        if (figureMusic && monster.timeLeft < 10) {
+            figureMusic.playbackRate = 1.5;
+        }
         
         if (monster.timeLeft <= 0) {
             clearInterval(timer);
@@ -1079,7 +1074,38 @@ function startGuard50() {
     document.getElementById('guard-50-overlay').style.display = 'flex';
     document.getElementById('guard-code').textContent = '????';
     
+    startGuardAttacks();
     generateBooks();
+}
+
+function startGuardAttacks() {
+    const monster = gameState.monsters.guard50;
+    
+    const attackTimer = setInterval(() => {
+        if (!monster.active) {
+            clearInterval(attackTimer);
+            return;
+        }
+        
+        if (!gameState.isHiding) {
+            clearInterval(attackTimer);
+            gameOver('Страж нашел вас! Нужно было спрятаться в шкаф!');
+        } else {
+            showMessage('Вы пережили атаку стража!', 'success');
+        }
+        
+        setTimeout(() => {
+            if (monster.active) {
+                document.body.classList.add('light-flicker');
+                setTimeout(() => {
+                    document.body.classList.remove('light-flicker');
+                }, 1000);
+            }
+        }, 6000);
+        
+    }, 7000);
+    
+    monster.attackTimer = attackTimer;
 }
 
 function generateBooks() {
@@ -1123,17 +1149,15 @@ function generateBooks() {
                     codeDisplay.textContent = currentCode.join('');
                 }
                 
-                // МИНИ-ИГРА ПРИ ОТКРЫТИИ КНИГИ
-                if (Math.random() < 0.3 && !monster.minigameActive) {
-                    startGuardMinigame();
-                }
-                
                 if (monster.booksOpened >= 4) {
                     setTimeout(completeGuard50, 1000);
                 }
             } else {
                 this.classList.add('red');
                 this.textContent = 'X';
+                if (!monster.minigameActive) {
+                    startGuardMinigame();
+                }
             }
         };
         
@@ -1141,7 +1165,6 @@ function generateBooks() {
     }
 }
 
-// МИНИ-ИГРА СТРАЖА
 function startGuardMinigame() {
     const monster = gameState.monsters.guard50;
     monster.minigameActive = true;
@@ -1207,6 +1230,11 @@ function generateMinigameBooks() {
 
 function completeGuard50() {
     const monster = gameState.monsters.guard50;
+    
+    if (monster.attackTimer) {
+        clearInterval(monster.attackTimer);
+    }
+    
     monster.active = false;
     gameState.monsterActive = false;
     document.getElementById('guard-50-overlay').style.display = 'none';
@@ -1233,6 +1261,8 @@ function startGuard100() {
     monster.keysCollected = 0;
     monster.keysNeeded = 20;
     monster.squares = [];
+    monster.minigameActive = false;
+    monster.shapeRounds = 0;
     
     const guardMusic = document.getElementById('guard-music');
     if (guardMusic) {
@@ -1263,7 +1293,7 @@ function generateGuard100Game() {
             document.getElementById('guard-keys-counter').textContent = `${monster.keysCollected}/${monster.keysNeeded}`;
             
             if (monster.keysCollected >= monster.keysNeeded) {
-                completeGuard100();
+                startFinalMinigame();
             }
         };
         container.appendChild(key);
@@ -1275,17 +1305,172 @@ function generateGuard100Game() {
         square.style.left = Math.random() * 560 + 'px';
         square.style.top = Math.random() * 360 + 'px';
         
+        let xDirection = Math.random() > 0.5 ? 1 : -1;
+        let yDirection = Math.random() > 0.5 ? 1 : -1;
+        let speed = 1 + Math.random() * 2;
+        
+        const moveSquare = setInterval(() => {
+            if (!monster.active) {
+                clearInterval(moveSquare);
+                return;
+            }
+            
+            const rect = square.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            let newX = parseFloat(square.style.left) + xDirection * speed;
+            let newY = parseFloat(square.style.top) + yDirection * speed;
+            
+            if (newX <= 0 || newX >= 560) xDirection *= -1;
+            if (newY <= 0 || newY >= 360) yDirection *= -1;
+            
+            square.style.left = Math.max(0, Math.min(560, newX)) + 'px';
+            square.style.top = Math.max(0, Math.min(360, newY)) + 'px';
+            
+        }, 50);
+        
         square.onmouseenter = function() {
             gameOver('Красный квадрат!');
         };
         
         container.appendChild(square);
-        monster.squares.push(square);
+        monster.squares.push({ element: square, moveInterval: moveSquare });
+    }
+}
+
+function startFinalMinigame() {
+    const monster = gameState.monsters.guard100;
+    monster.minigameActive = true;
+    monster.shapeRounds = 0;
+    
+    const container = document.getElementById('guard-100-area');
+    container.innerHTML = '';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.alignItems = 'center';
+    container.style.justifyContent = 'center';
+    
+    document.getElementById('guard-keys-counter').textContent = 'ФИНАЛЬНАЯ МИНИ-ИГРА';
+    
+    startShapeRound();
+}
+
+function startShapeRound() {
+    const monster = gameState.monsters.guard100;
+    const container = document.getElementById('guard-100-area');
+    
+    container.innerHTML = '';
+    
+    const shapes = ['circle', 'square', 'triangle'];
+    const targetShape = shapes[Math.floor(Math.random() * shapes.length)];
+    
+    const instruction = document.createElement('div');
+    instruction.textContent = `Нажми на: ${getShapeName(targetShape)}`;
+    instruction.style.color = 'white';
+    instruction.style.fontSize = '24px';
+    instruction.style.marginBottom = '20px';
+    instruction.style.fontWeight = 'bold';
+    container.appendChild(instruction);
+    
+    const shapesContainer = document.createElement('div');
+    shapesContainer.style.display = 'flex';
+    shapesContainer.style.gap = '20px';
+    
+    shapes.forEach(shape => {
+        const shapeElement = document.createElement('div');
+        shapeElement.className = 'shape';
+        shapeElement.dataset.shape = shape;
+        
+        shapeElement.style.width = '80px';
+        shapeElement.style.height = '80px';
+        shapeElement.style.cursor = 'pointer';
+        shapeElement.style.display = 'flex';
+        shapeElement.style.alignItems = 'center';
+        shapeElement.style.justifyContent = 'center';
+        shapeElement.style.color = 'white';
+        shapeElement.style.fontWeight = 'bold';
+        shapeElement.style.fontSize = '12px';
+        
+        switch(shape) {
+            case 'circle':
+                shapeElement.style.backgroundColor = '#3498db';
+                shapeElement.style.borderRadius = '50%';
+                shapeElement.textContent = 'Круг';
+                break;
+            case 'square':
+                shapeElement.style.backgroundColor = '#e74c3c';
+                shapeElement.textContent = 'Квадрат';
+                break;
+            case 'triangle':
+                shapeElement.style.backgroundColor = '#f39c12';
+                shapeElement.style.clipPath = 'polygon(50% 0%, 0% 100%, 100% 100%)';
+                shapeElement.textContent = 'Треуг.';
+                break;
+        }
+        
+        shapeElement.onclick = function() {
+            if (shape === targetShape) {
+                monster.shapeRounds++;
+                showMessage(`Правильно! ${monster.shapeRounds}/5`, 'success');
+                
+                if (monster.shapeRounds >= 5) {
+                    completeGuard100();
+                } else {
+                    setTimeout(startShapeRound, 500);
+                }
+            } else {
+                gameOver('Неправильная фигура!');
+            }
+        };
+        
+        shapesContainer.appendChild(shapeElement);
+    });
+    
+    container.appendChild(shapesContainer);
+    
+    let timeLeft = 2;
+    const timerElement = document.createElement('div');
+    timerElement.style.color = '#f39c12';
+    timerElement.style.fontSize = '20px';
+    timerElement.style.marginTop = '10px';
+    timerElement.textContent = `Время: ${timeLeft}с`;
+    container.appendChild(timerElement);
+    
+    const timer = setInterval(() => {
+        timeLeft--;
+        timerElement.textContent = `Время: ${timeLeft}с`;
+        
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            gameOver('Время вышло!');
+        }
+    }, 1000);
+    
+    monster.shapeTimer = timer;
+}
+
+function getShapeName(shape) {
+    switch(shape) {
+        case 'circle': return 'Круг';
+        case 'square': return 'Квадрат';
+        case 'triangle': return 'Треугольник';
+        default: return shape;
     }
 }
 
 function completeGuard100() {
     const monster = gameState.monsters.guard100;
+    
+    monster.squares.forEach(square => {
+        if (square.moveInterval) {
+            clearInterval(square.moveInterval);
+        }
+    });
+    
+    if (monster.shapeTimer) {
+        clearInterval(monster.shapeTimer);
+    }
+    
     monster.active = false;
     gameState.monsterActive = false;
     document.getElementById('guard-100-overlay').style.display = 'none';
@@ -1439,4 +1624,3 @@ window.clickBright = clickBright;
 window.passEscapeDoor = passEscapeDoor;
 window.startGuard50 = startGuard50;
 window.startGuard100 = startGuard100;
-window.openBook = openBook;
