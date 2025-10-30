@@ -1,4 +1,3 @@
-// Глобальное состояние игры
 const gameState = {
     currentRoom: 1,
     hasKey: false,
@@ -22,8 +21,14 @@ const gameState = {
         theEnd: { name: "Это конец", description: "Пройти игру", unlocked: false },
         darkness: { name: "Темно", description: "4 раза подряд тёмная комната", unlocked: false },
         serious: { name: "Это серьёзно?", description: "Попасть на 30 ловушек за одну игру", unlocked: false },
-        seekSurvivor: { name: "Выживший", description: "Пережить атаку Поедателя", unlocked: false }
+        seekSurvivor: { name: "Выживший", description: "Пережить атаку Поедателя", unlocked: false },
+        voidEnter: { name: "ЭТО НОЛЬ", description: "Зайти в пустотное измерение", unlocked: false },
+        voidComplete: { name: "Кто я? Как я это сделал?", description: "Пройти 250 комнат в пустотном измерении", unlocked: false },
+        speedrun: { name: "ЭТО МОЁ ВРЕМЯ", description: "Пройти игру за 5 минут", unlocked: false },
+        teleport: { name: "Телепорт?", description: "Встретить смотрящего и открыть дверь", unlocked: false },
+        smart: { name: "Я УМНЫЙ!", description: "Пройти 50 комнату с 2 или меньше ошибок", unlocked: false }
     },
+    
     stats: {
         temporalCount: 0,
         trapCount: 0,
@@ -32,6 +37,7 @@ const gameState = {
         lastTemporalRoom: 0,
         seekAttacks: 0
     },
+    
     index: {
         temporal: { name: "Временной", description: "Появляется при открытии двери с 15% шансом. Убивает через 5 секунд.", met: false },
         redCreature: { name: "Красная тварь", description: "Появляется каждые 10-15 секунд. Требует нажать кнопку за 1.5 секунды.", met: false },
@@ -41,27 +47,45 @@ const gameState = {
         darkness: { name: "Тьма", description: "Появляется при открытии двери с 35% шансом. Комната становится темной.", met: false },
         figure: { name: "ВВЕРХ", description: "Появляется в комнате 030. Нужно пройти 15 дверей за 30 секунд.", met: false },
         guard: { name: "СТРАЖ", description: "Охраняет комнаты 050 и 100. Требует решения головоломок.", met: false },
-        seek: { name: "Поедатель", description: "Появляется в комнатах со шкафами с 10% шансом. Нужно спрятаться в шкаф.", met: false }
+        seek: { name: "Поедатель", description: "Появляется в комнатах со шкафами с 10% шансом. Нужно спрятаться в шкаф.", met: false },
+        lost: { name: "Потерянный", description: "Обитает в пустотном измерении. Появляется при открытии двери с 20% шансом.", met: false },
+        watcher: { name: "Смотрящий", description: "Появляется возле двери в отелях. Телепортирует на 10 комнат назад если открыть дверь.", met: false }
     },
+    
     monsters: {
         temporal: { chance: 0.15, active: false, timer: null },
         redCreature: { chance: 0.12, active: false, timer: null },
         greenCreature: { chance: 0.12, active: false, timer: null },
         eyePerformer: { chance: 0.20, active: false, count: 0, maxCount: 2 },
-        bright: { chance: 0.10, active: false, clicks: 0, needed: 20 },
+        bright: { chance: 0.10, active: false, clicks: 0, needed: 20, deathTimer: null },
         darkness: { chance: 0.35, active: false },
         figure: { active: false, timer: null, doorsPassed: 0, totalDoors: 15, timeLeft: 30 },
         guard50: { active: false, code: "", booksOpened: 0, minigameActive: false, attackTimer: null },
         guard100: { active: false, keysCollected: 0, keysNeeded: 20, squares: [], minigameActive: false, shapeRounds: 0, shapeTimer: null },
-        seek: { active: false, attackTimer: null, flickerTimer: null }
-    }
+        seek: { active: false, attackTimer: null, flickerTimer: null },
+        lost: { chance: 0.20, active: false, timer: null },
+        watcher: { active: false, timer: null }
+    },
+    
+    settings: {
+        voidBonus: true
+    },
+    
+    void: {
+        active: false,
+        currentRoom: 1,
+        totalRooms: 250
+    },
+    
+    gameStartTime: null,
+    room50Mistakes: 0
 };
 
 // Генерация комнат
 const roomDefinitions = {};
 
 function roomHasClosets(roomNumber) {
-    return [3, 4, 6, 8, 11, 13, 14, 15].includes(roomNumber);
+    return [3, 4, 6, 8, 11, 13, 14, 15, 60].includes(roomNumber);
 }
 
 function generateRoomWithClosets(roomNumber) {
@@ -231,6 +255,28 @@ for (let i = 1; i <= 100; i++) {
             </div>
         `;
         needsKey = false;
+    } else if (i === 60) {
+        content = `
+            <div class="very-long-room">
+                <div class="room-text">Выбор пути... ${roomNumber}</div>
+                ${closetHTML}
+                <div style="height: 300px;"></div>
+                <div class="room-section">
+                    <div class="door" onclick="openDoor(61)">
+                        ${roomNumber}-A
+                        <div class="door-knob"></div>
+                    </div>
+                </div>
+                <div style="height: 1500px;"></div>
+                <div class="room-section">
+                    <div class="door" onclick="enterVoid()" style="background: #8e44ad; border-color: #6c3483;">
+                        VOID
+                        <div class="door-knob"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        needsKey = false;
     } else if (i === 100) {
         content = `
             ${closetHTML}
@@ -306,7 +352,7 @@ for (let i = 1; i <= 100; i++) {
         needsKey = Math.random() > 0.7;
     }
     
-    if (needsKey && i !== 1 && i !== 11 && i !== 13 && i !== 14 && i !== 25 && i !== 42) {
+    if (needsKey && i !== 1 && i !== 11 && i !== 13 && i !== 14 && i !== 25 && i !== 42 && i !== 60) {
         const keyX = Math.random() * 80 + 10;
         const keyY = Math.random() * 60 + 20;
         content = `
@@ -331,8 +377,33 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('index-back-btn').addEventListener('click', returnToMenu);
     document.getElementById('achievements-back-btn').addEventListener('click', returnToMenu);
     
+    createSettingsPanel();
     loadGameProgress();
 });
+
+function createSettingsPanel() {
+    const panel = document.createElement('div');
+    panel.className = 'settings-panel';
+    panel.innerHTML = `
+        <button class="settings-toggle" onclick="toggleSettings()">⚙️ Настройки</button>
+        <div class="settings-content" id="settings-content">
+            <div class="setting-item">
+                <input type="checkbox" id="void-bonus" ${gameState.settings.voidBonus ? 'checked' : ''} onchange="toggleVoidBonus(this.checked)">
+                <label for="void-bonus">Бонусы пустоты</label>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(panel);
+}
+
+function toggleSettings() {
+    const content = document.getElementById('settings-content');
+    content.style.display = content.style.display === 'block' ? 'none' : 'block';
+}
+
+function toggleVoidBonus(enabled) {
+    gameState.settings.voidBonus = enabled;
+}
 
 function loadGameProgress() {
     const saved = localStorage.getItem('doorsOffProgress');
@@ -340,13 +411,17 @@ function loadGameProgress() {
         const progress = JSON.parse(saved);
         gameState.achievements = { ...gameState.achievements, ...progress.achievements };
         gameState.index = { ...gameState.index, ...progress.index };
+        if (progress.settings) {
+            gameState.settings = { ...gameState.settings, ...progress.settings };
+        }
     }
 }
 
 function saveGameProgress() {
     const progress = {
         achievements: gameState.achievements,
-        index: gameState.index
+        index: gameState.index,
+        settings: gameState.settings
     };
     localStorage.setItem('doorsOffProgress', JSON.stringify(progress));
 }
@@ -383,6 +458,8 @@ function startGame() {
     gameState.seekCooldown = 0;
     gameState.isHiding = false;
     gameState.currentCloset = null;
+    gameState.void.active = false;
+    gameState.room50Mistakes = 0;
     
     gameState.stats = {
         temporalCount: 0,
@@ -407,6 +484,10 @@ function startGame() {
             clearTimeout(monster.attackTimer);
             monster.attackTimer = null;
         }
+        if (monster.deathTimer) {
+            clearTimeout(monster.deathTimer);
+            monster.deathTimer = null;
+        }
         if (monster.count) monster.count = 0;
         if (monster.clicks) monster.clicks = 0;
     });
@@ -415,9 +496,22 @@ function startGame() {
     document.getElementById('game-screen').style.display = 'block';
     document.getElementById('index-screen').style.display = 'none';
     document.getElementById('achievements-screen').style.display = 'none';
+    document.getElementById('void-overlay').style.display = 'none';
     
     document.body.style.background = '#0a0a0a';
     document.body.style.opacity = '1';
+    
+    gameState.gameStartTime = Date.now();
+    
+    // Проверка достижения скорости
+    setTimeout(() => {
+        if (gameState.gameActive) {
+            const playTime = (Date.now() - gameState.gameStartTime) / 1000 / 60;
+            if (playTime <= 5) {
+                unlockAchievement('speedrun');
+            }
+        }
+    }, 5 * 60 * 1000);
     
     unlockAchievement('welcome');
     loadRoom(1);
@@ -429,7 +523,7 @@ function startMonsterTimers() {
         clearInterval(gameState.monsters.redCreature.timer);
     }
     gameState.monsters.redCreature.timer = setInterval(() => {
-        if (gameState.gameActive && !gameState.monsterActive && Math.random() < gameState.monsters.redCreature.chance) {
+        if (gameState.gameActive && !gameState.monsterActive && !gameState.void.active && Math.random() < gameState.monsters.redCreature.chance) {
             spawnRedCreature();
         }
     }, 10000 + Math.random() * 5000);
@@ -438,7 +532,7 @@ function startMonsterTimers() {
         clearInterval(gameState.monsters.greenCreature.timer);
     }
     gameState.monsters.greenCreature.timer = setInterval(() => {
-        if (gameState.gameActive && !gameState.monsterActive && Math.random() < gameState.monsters.greenCreature.chance) {
+        if (gameState.gameActive && !gameState.monsterActive && !gameState.void.active && Math.random() < gameState.monsters.greenCreature.chance) {
             spawnGreenCreature();
         }
     }, 10000 + Math.random() * 5000);
@@ -467,12 +561,17 @@ function loadRoom(roomNumber) {
             setTimeout(() => spawnFigure(), 1000);
         }
         
-        if (Math.random() < gameState.monsters.darkness.chance) {
+        if (Math.random() < gameState.monsters.darkness.chance && !gameState.void.active) {
             activateDarkness();
         }
         
-        if (room.hasClosets && gameState.seekCooldown === 0) {
+        if (room.hasClosets && gameState.seekCooldown === 0 && !gameState.void.active) {
             setTimeout(() => spawnSeek(), 2000);
+        }
+        
+        // Спавн Смотрящего в отелях
+        if ([42, 57, 73, 88].includes(roomNumber)) {
+            setTimeout(() => spawnWatcher(), 3000);
         }
     }
 }
@@ -513,7 +612,7 @@ function toggleCloset(closet) {
 }
 
 function spawnSeek() {
-    if (gameState.monsterActive || gameState.seekCooldown > 0 || !roomHasClosets(gameState.currentRoom)) return;
+    if (gameState.monsterActive || gameState.seekCooldown > 0 || !roomHasClosets(gameState.currentRoom) || gameState.void.active) return;
     
     if (Math.random() > 0.1) return;
     
@@ -578,6 +677,22 @@ function takeKey() {
 }
 
 function openDoor(nextRoom) {
+    if (gameState.monsters.watcher.active) {
+        unlockAchievement('teleport');
+        showMessage("Смотрящий телепортировал вас назад!", "error");
+        gameState.monsters.watcher.active = false;
+        gameState.monsterActive = false;
+        document.getElementById('watcher-overlay').style.display = 'none';
+        
+        if (gameState.monsters.watcher.timer) {
+            clearInterval(gameState.monsters.watcher.timer);
+        }
+        
+        const backRoom = Math.max(1, gameState.currentRoom - 10);
+        loadRoom(backRoom);
+        return;
+    }
+    
     if (gameState.isHiding) {
         showMessage('Вы не можете открывать двери из шкафа!', 'warning');
         return;
@@ -602,7 +717,12 @@ function openDoor(nextRoom) {
 }
 
 function checkDoorMonsters() {
-    if (Math.random() < gameState.monsters.temporal.chance) {
+    let temporalChance = gameState.monsters.temporal.chance;
+    if (gameState.settings.voidBonus) {
+        temporalChance *= 0.95; // -5% шанс
+    }
+    
+    if (Math.random() < temporalChance) {
         spawnTemporal();
     } else if (Math.random() < gameState.monsters.eyePerformer.chance && gameState.monsters.eyePerformer.count < gameState.monsters.eyePerformer.maxCount) {
         spawnEyePerformer();
@@ -713,7 +833,7 @@ function spawnRedCreature() {
     
     document.getElementById('red-creature-overlay').style.display = 'flex';
     
-    let timeLeft = 1.5;
+    let timeLeft = gameState.settings.voidBonus ? 2.0 : 1.5;
     const timerElement = document.getElementById('red-timer');
     timerElement.textContent = timeLeft.toFixed(1);
     
@@ -765,7 +885,7 @@ function spawnGreenCreature() {
     greenButton.style.cursor = 'pointer';
     greenButton.onclick = failGreenCreature;
     
-    let timeLeft = 1.5;
+    let timeLeft = gameState.settings.voidBonus ? 2.0 : 1.5;
     const timerElement = document.getElementById('green-timer');
     timerElement.textContent = timeLeft.toFixed(1);
     
@@ -944,6 +1064,16 @@ function spawnBright() {
     monster.clicks = 0;
     document.getElementById('bright-overlay').style.display = 'flex';
     document.getElementById('bright-counter').textContent = '0/20';
+    
+    // Таймер смерти
+    const deathTimer = setTimeout(() => {
+        if (monster.active) {
+            unlockAchievement('blind');
+            gameOver("Вы ослепли от ЯРКОГО!");
+        }
+    }, gameState.settings.voidBonus ? 15000 : 10000);
+    
+    monster.deathTimer = deathTimer;
 }
 
 function clickBright() {
@@ -954,6 +1084,9 @@ function clickBright() {
     document.getElementById('bright-counter').textContent = `${monster.clicks}/20`;
     
     if (monster.clicks >= monster.needed) {
+        if (monster.deathTimer) {
+            clearTimeout(monster.deathTimer);
+        }
         monster.active = false;
         gameState.monsterActive = false;
         document.getElementById('bright-overlay').style.display = 'none';
@@ -1155,6 +1288,8 @@ function generateBooks() {
             } else {
                 this.classList.add('red');
                 this.textContent = 'X';
+                gameState.room50Mistakes++;
+                
                 if (!monster.minigameActive) {
                     startGuardMinigame();
                 }
@@ -1245,6 +1380,10 @@ function completeGuard50() {
         guardMusic.currentTime = 0;
     }
     
+    if (gameState.room50Mistakes <= 2) {
+        unlockAchievement('smart');
+    }
+    
     unlockAchievement('memory');
     showMessage('Страж 050 побежден!', 'success');
     proceedToRoom(51);
@@ -1259,7 +1398,7 @@ function startGuard100() {
     gameState.monsterActive = true;
     
     monster.keysCollected = 0;
-    monster.keysNeeded = 20;
+    monster.keysNeeded = gameState.settings.voidBonus ? 15 : 20;
     monster.squares = [];
     monster.minigameActive = false;
     monster.shapeRounds = 0;
@@ -1271,7 +1410,7 @@ function startGuard100() {
     }
     
     document.getElementById('guard-100-overlay').style.display = 'flex';
-    document.getElementById('guard-keys-counter').textContent = '0/20';
+    document.getElementById('guard-keys-counter').textContent = `0/${monster.keysNeeded}`;
     
     generateGuard100Game();
 }
@@ -1281,7 +1420,7 @@ function generateGuard100Game() {
     container.innerHTML = '';
     const monster = gameState.monsters.guard100;
     
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < monster.keysNeeded; i++) {
         const key = document.createElement('div');
         key.className = 'key-item';
         key.style.left = Math.random() * 570 + 'px';
@@ -1488,6 +1627,195 @@ function completeGuard100() {
     }, 5000);
 }
 
+// ПУСТОТНОЕ ИЗМЕРЕНИЕ
+function enterVoid() {
+    gameState.void.active = true;
+    gameState.void.currentRoom = 1;
+    unlockAchievement('voidEnter');
+    
+    document.getElementById('void-overlay').style.display = 'flex';
+    loadVoidRoom(1);
+}
+
+function loadVoidRoom(roomNumber) {
+    if (roomNumber > gameState.void.totalRooms) {
+        exitVoid();
+        return;
+    }
+    
+    gameState.void.currentRoom = roomNumber;
+    document.getElementById('void-counter').textContent = `null - ${roomNumber}`;
+    
+    const container = document.getElementById('void-room');
+    const hasKey = Math.random() < 0.15;
+    
+    let content = '';
+    
+    // Генерация шкафов для пустоты
+    const closetCount = Math.floor(Math.random() * 2) + 1;
+    for (let i = 0; i < closetCount; i++) {
+        const left = Math.random() * 70 + 15;
+        const top = Math.random() * 60 + 20;
+        content += `
+            <div class="void-closet" onclick="toggleVoidCloset(this)" 
+                 style="left: ${left}%; top: ${top}%;">
+                Шкаф
+            </div>
+        `;
+    }
+    
+    // Ключ
+    if (hasKey) {
+        const keyX = Math.random() * 70 + 15;
+        const keyY = Math.random() * 60 + 20;
+        content += `
+            <button class="void-key" onclick="takeVoidKey()" 
+                    style="left: ${keyX}%; top: ${keyY}%;">🔑</button>
+        `;
+    }
+    
+    // Дверь
+    if (roomNumber === gameState.void.totalRooms) {
+        content += `
+            <div class="void-door" onclick="exitVoid()">
+                EXIT
+            </div>
+        `;
+    } else {
+        content += `
+            <div class="void-door" onclick="openVoidDoor(${roomNumber + 1})">
+                null - ${roomNumber + 1}
+            </div>
+        `;
+    }
+    
+    container.innerHTML = content;
+}
+
+function openVoidDoor(nextRoom) {
+    if (gameState.isHiding) {
+        showMessage("Вы не можете открывать двери из шкафа!", "warning");
+        return;
+    }
+    
+    // Проверка на Потерянного
+    if (Math.random() < gameState.monsters.lost.chance) {
+        spawnLost();
+        return;
+    }
+    
+    loadVoidRoom(nextRoom);
+    
+    if (nextRoom === gameState.void.totalRooms) {
+        unlockAchievement('voidComplete');
+    }
+}
+
+function spawnLost() {
+    if (gameState.monsterActive) return;
+    
+    const monster = gameState.monsters.lost;
+    monster.active = true;
+    gameState.monsterActive = true;
+    gameState.index.lost.met = true;
+    
+    showMessage("ПОТЕРЯННЫЙ!", "error");
+    
+    let timeLeft = 3;
+    const timer = setInterval(() => {
+        if (!monster.active) {
+            clearInterval(timer);
+            return;
+        }
+        
+        timeLeft--;
+        
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            gameOver("Потерянный нашел вас!");
+        }
+    }, 1000);
+    
+    // Шанс избежать через шкаф
+    setTimeout(() => {
+        if (monster.active && gameState.isHiding) {
+            monster.active = false;
+            gameState.monsterActive = false;
+            showMessage("Вы спрятались от Потерянного!", "success");
+        }
+    }, 2000);
+}
+
+function toggleVoidCloset(closet) {
+    if (gameState.isHiding) {
+        closet.classList.remove('hiding');
+        gameState.isHiding = false;
+        gameState.currentCloset = null;
+        showMessage('Вы вышли из шкафа', 'success');
+    } else {
+        closet.classList.add('hiding');
+        gameState.isHiding = true;
+        gameState.currentCloset = closet;
+        showMessage('Вы спрятались в шкафу', 'success');
+    }
+}
+
+function takeVoidKey() {
+    if (gameState.isHiding) {
+        showMessage('Вы не можете подбирать предметы из шкафа!', 'warning');
+        return;
+    }
+    
+    gameState.hasKey = true;
+    showMessage('Ключ подобран!', 'success');
+    
+    const keys = document.querySelectorAll('.void-key');
+    keys.forEach(key => key.remove());
+}
+
+function exitVoid() {
+    gameState.void.active = false;
+    document.getElementById('void-overlay').style.display = 'none';
+    
+    if (gameState.settings.voidBonus) {
+        showMessage("Бонусы пустоты активированы!", "success");
+    }
+    
+    loadRoom(61);
+}
+
+// СМОТРЯЩИЙ
+function spawnWatcher() {
+    if (gameState.monsterActive || Math.random() > 0.15 || gameState.void.active) return;
+    
+    const monster = gameState.monsters.watcher;
+    monster.active = true;
+    gameState.monsterActive = true;
+    gameState.index.watcher.met = true;
+    
+    document.getElementById('watcher-overlay').style.display = 'flex';
+    
+    let timeLeft = 5;
+    const timerElement = document.getElementById('watcher-timer');
+    timerElement.textContent = timeLeft.toFixed(1);
+    
+    const timer = setInterval(() => {
+        timeLeft -= 0.1;
+        timerElement.textContent = timeLeft.toFixed(1);
+        
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            monster.active = false;
+            gameState.monsterActive = false;
+            document.getElementById('watcher-overlay').style.display = 'none';
+            showMessage("Смотрящий ушел", "success");
+        }
+    }, 100);
+    
+    monster.timer = timer;
+}
+
+// Вспомогательные функции
 function proceedToRoom(roomNumber) {
     loadRoom(roomNumber);
 }
@@ -1523,6 +1851,10 @@ function stopAllMonsters() {
                 clearTimeout(monster.attackTimer);
                 monster.attackTimer = null;
             }
+            if (monster.deathTimer) {
+                clearTimeout(monster.deathTimer);
+                monster.deathTimer = null;
+            }
         }
     });
     
@@ -1534,7 +1866,7 @@ function stopAllMonsters() {
     
     document.body.classList.remove('light-flicker');
     
-    const overlays = document.querySelectorAll('.monster-overlay, .bright-overlay, .temporal-warning, .seek-warning');
+    const overlays = document.querySelectorAll('.monster-overlay, .bright-overlay, .temporal-warning, .seek-warning, .void-overlay, .watcher-overlay');
     overlays.forEach(overlay => {
         overlay.style.display = 'none';
     });
@@ -1550,6 +1882,7 @@ function stopAllMonsters() {
     gameState.monsterActive = false;
     gameState.isHiding = false;
     gameState.currentCloset = null;
+    gameState.void.active = false;
 }
 
 function returnToMenu() {
@@ -1560,6 +1893,7 @@ function returnToMenu() {
     document.getElementById('game-screen').style.display = 'none';
     document.getElementById('index-screen').style.display = 'none';
     document.getElementById('achievements-screen').style.display = 'none';
+    document.getElementById('void-overlay').style.display = 'none';
     
     document.body.style.background = '#0a0a0a';
     document.body.style.opacity = '1';
@@ -1570,6 +1904,7 @@ function showIndex() {
     document.getElementById('game-screen').style.display = 'none';
     document.getElementById('index-screen').style.display = 'block';
     document.getElementById('achievements-screen').style.display = 'none';
+    document.getElementById('void-overlay').style.display = 'none';
     
     const container = document.getElementById('index-container');
     container.innerHTML = '';
@@ -1590,6 +1925,7 @@ function showAchievements() {
     document.getElementById('game-screen').style.display = 'none';
     document.getElementById('index-screen').style.display = 'none';
     document.getElementById('achievements-screen').style.display = 'block';
+    document.getElementById('void-overlay').style.display = 'none';
     
     const container = document.getElementById('achievements-container');
     container.innerHTML = '';
@@ -1624,3 +1960,10 @@ window.clickBright = clickBright;
 window.passEscapeDoor = passEscapeDoor;
 window.startGuard50 = startGuard50;
 window.startGuard100 = startGuard100;
+window.toggleVoidCloset = toggleVoidCloset;
+window.takeVoidKey = takeVoidKey;
+window.openVoidDoor = openVoidDoor;
+window.enterVoid = enterVoid;
+window.exitVoid = exitVoid;
+window.toggleSettings = toggleSettings;
+window.toggleVoidBonus = toggleVoidBonus;
