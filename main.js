@@ -570,7 +570,7 @@ function loadRoom(roomNumber) {
         }
         
         // Спавн Смотрящего в отелях
-        if ([42, 57, 73, 88].includes(roomNumber)) {
+        if ([42, 57, 73, 88, 12, 27, 33, 48].includes(roomNumber)) {
             setTimeout(() => spawnWatcher(), 3000);
         }
     }
@@ -969,8 +969,8 @@ function spawnEyePerformer() {
     
     requirementElement.onclick = function() {
         if (currentCommand.type === 'click' || currentCommand.type === 'fast-click') {
-            progress = Math.min(100, progress + 5);
-            showMessage('+5%', 'success');
+            progress = Math.min(100, progress + 10);
+            showMessage('+10%', 'success');
         } else {
             progress = Math.max(0, progress - 10);
             showMessage('-10%', 'error');
@@ -991,7 +991,7 @@ function spawnEyePerformer() {
             return;
         }
         
-        progress = Math.max(0, progress - 10);
+        progress = Math.max(0, progress - 6);
         updateProgress();
         
         if (progress <= 0) {
@@ -1071,7 +1071,7 @@ function spawnBright() {
             unlockAchievement('blind');
             gameOver("Вы ослепли от ЯРКОГО!");
         }
-    }, gameState.settings.voidBonus ? 15000 : 10000);
+    }, gameState.settings.voidBonus ? 11000 : 6000);
     
     monster.deathTimer = deathTimer;
 }
@@ -1140,7 +1140,7 @@ function spawnFigure() {
                 figureMusic.pause();
                 figureMusic.currentTime = 0;
             }
-            gameOver('Время вышло! ВВЕРХ поймал вас!');
+            gameOver('Время вышло! ВВЕРХ убил тебя...');
         }
     }, 100);
     
